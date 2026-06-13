@@ -1,20 +1,20 @@
-import { debounce } from "./autosave.js?v=20260613-24";
+import { debounce } from "./autosave.js?v=20260613-25";
 import {
   AUTHORS,
   getAuthor,
   getRecordAuthorColor,
-} from "./authors.js?v=20260613-24";
+} from "./authors.js?v=20260613-25";
 import {
   createImageAttachment,
   imageBlobToDataUrl,
   preparePastedImageBlob,
-} from "./images.js?v=20260613-24";
+} from "./images.js?v=20260613-25";
 import {
   loadCloudRecords,
   saveCloudComment,
   saveCloudRecord,
   uploadCloudImage,
-} from "./cloudStorage.js?v=20260613-24";
+} from "./cloudStorage.js?v=20260613-25";
 import {
   addRecord,
   cleanRecordHtml,
@@ -22,7 +22,7 @@ import {
   hasLocalEmbeddedImage,
   isBlankHtml,
   mergeRecords,
-} from "./notes.js?v=20260613-24";
+} from "./notes.js?v=20260613-25";
 import {
   clearDraft,
   clearRecords,
@@ -35,7 +35,7 @@ import {
   saveDraft,
   saveRecords,
   saveSelectedAuthor,
-} from "./storage.js?v=20260613-24";
+} from "./storage.js?v=20260613-25";
 
 const noteInput = document.querySelector("#noteInput");
 const saveStatus = document.querySelector("#saveStatus");
@@ -286,6 +286,17 @@ function renderRecords() {
     if (authorBorderColor) {
       card.classList.add("record-card-with-author");
       card.style.setProperty("--author-color", authorBorderColor);
+
+      const selectedAuthor = getSelectedAuthor();
+      const isSelectedAuthorRecord = record.authorId
+        ? getAuthor(record.authorId).id === selectedAuthor.id
+        : record.authorColor === selectedAuthor.color;
+
+      if (isSelectedAuthorRecord) {
+        card.classList.add("record-card-own");
+      } else {
+        card.classList.add("record-card-other");
+      }
     }
 
     const time = document.createElement("time");

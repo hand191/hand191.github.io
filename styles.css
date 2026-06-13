@@ -347,14 +347,25 @@ p {
   padding: 5px 8px 14px;
   border: 1px solid #e4dfd3;
   border-left: 8px solid #e4dfd3;
+  border-right: 1px solid #e4dfd3;
   border-radius: 8px;
   background: #fffdf7;
 }
 
 .record-card-with-author {
-  border-color: var(--author-color);
+  border-color: #e4dfd3;
+}
+
+.record-card-own {
   border-left-color: var(--author-color);
+  border-right-color: #e4dfd3;
   box-shadow: inset 5px 0 0 rgba(31, 41, 55, 0.08);
+}
+
+.record-card-other {
+  border-left-color: #e4dfd3;
+  border-right: 8px solid var(--author-color);
+  box-shadow: inset -5px 0 0 rgba(31, 41, 55, 0.08);
 }
 
 .record-toolbar {
