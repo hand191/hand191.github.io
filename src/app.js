@@ -1,21 +1,21 @@
-import { debounce } from "./autosave.js?v=20260613-7";
+import { debounce } from "./autosave.js?v=20260613-8";
 import {
   createImageAttachment,
   imageBlobToDataUrl,
   preparePastedImageBlob,
-} from "./images.js?v=20260613-7";
+} from "./images.js?v=20260613-8";
 import {
   loadCloudRecords,
   saveCloudRecord,
   uploadCloudImage,
-} from "./cloudStorage.js?v=20260613-7";
+} from "./cloudStorage.js?v=20260613-8";
 import {
   addRecord,
   createRecord,
   hasLocalEmbeddedImage,
   isBlankHtml,
   mergeRecords,
-} from "./notes.js?v=20260613-7";
+} from "./notes.js?v=20260613-8";
 import {
   clearDraft,
   isStorageQuotaError,
@@ -25,7 +25,7 @@ import {
   loadRecords,
   saveDraft,
   saveRecords,
-} from "./storage.js?v=20260613-7";
+} from "./storage.js?v=20260613-8";
 
 const noteInput = document.querySelector("#noteInput");
 const saveStatus = document.querySelector("#saveStatus");
@@ -35,6 +35,12 @@ const recordCount = document.querySelector("#recordCount");
 const recordsList = document.querySelector("#recordsList");
 let records = loadRecords();
 let isProcessingPaste = false;
+let isArchiving = false;
+
+function setStatus(message, tone = "neutral") {
+  saveStatus.textContent = message;
+  saveStatus.dataset.tone = tone;
+}
 
 function formatSavedTime(value) {
   if (!value) {
@@ -90,12 +96,12 @@ function renderRecords() {
 }
 
 function updateArchiveButton() {
-  archiveButton.disabled = isBlankHtml(noteInput.innerHTML);
+  archiveButton.disabled = isArchiving || isBlankHtml(noteInput.innerHTML);
 }
 
 function saveCurrentDraft() {
   saveDraft(noteInput.innerHTML);
-  saveStatus.textContent = "已自动保存";
+  setStatus("已自动保存", "success");
   renderLastSavedTime();
   updateArchiveButton();
 }
@@ -139,10 +145,11 @@ async function prepareImageSource(imageFile) {
     const publicUrl = await uploadCloudImage(imageBlob, loadOrCreateDraftId());
 
     if (publicUrl) {
+      setStatus("图片已上传", "success");
       return publicUrl;
     }
   } catch (error) {
-    saveStatus.textContent = "图片云同步失败，已本机保存";
+    setStatus("图片云同步失败，已本机保存", "error");
     console.error(error);
   }
 
@@ -172,7 +179,7 @@ const autosaveDraft = debounce(() => {
   try {
     saveCurrentDraft();
   } catch (error) {
-    saveStatus.textContent = getSaveErrorMessage(error);
+    setStatus(getSaveErrorMessage(error), "error");
     console.error(error);
   }
 }, 600);
@@ -196,19 +203,28 @@ async function refreshCloudRecords() {
     records = mergeRecords(records, cloudRecords);
     saveRecords(records);
     renderRecords();
-    saveStatus.textContent = "已同步";
+    setStatus("已同步", "success");
   } catch (error) {
-    saveStatus.textContent = "同步失败，使用本机记录";
+    setStatus("同步失败，使用本机记录", "error");
     console.error(error);
   }
 }
 
 async function archiveCurrentContent() {
+  if (isArchiving) {
+    setStatus("正在归档，请稍等", "working");
+    return;
+  }
+
   const contentHtml = noteInput.innerHTML;
 
   if (isBlankHtml(contentHtml)) {
     return;
   }
+
+  isArchiving = true;
+  setStatus("正在归档...", "working");
+  updateArchiveButton();
 
   const nextRecords = addRecord(
     records,
@@ -224,16 +240,19 @@ async function archiveCurrentContent() {
     saveRecords(nextRecords);
     clearDraft();
   } catch (error) {
-    saveStatus.textContent = getSaveErrorMessage(error);
+    setStatus(getSaveErrorMessage(error), "error");
     console.error(error);
+    isArchiving = false;
+    updateArchiveButton();
     return;
   }
 
   records = nextRecords;
   noteInput.innerHTML = "";
-  saveStatus.textContent = "已归档";
+  setStatus("已归档并同步", "success");
   renderLastSavedTime();
   renderRecords();
+  isArchiving = false;
   updateArchiveButton();
 }
 
@@ -244,7 +263,7 @@ updateArchiveButton();
 refreshCloudRecords();
 
 noteInput.addEventListener("input", () => {
-  saveStatus.textContent = "正在输入...";
+  setStatus("正在输入...", "working");
   updateArchiveButton();
   autosaveDraft();
 });
@@ -253,7 +272,7 @@ noteInput.addEventListener("paste", async (event) => {
   const images = getPastedImageFiles(event);
 
   if (!images.length) {
-    saveStatus.textContent = "正在输入...";
+    setStatus("正在输入...", "working");
     autosaveDraft();
     return;
   }
@@ -261,12 +280,12 @@ noteInput.addEventListener("paste", async (event) => {
   event.preventDefault();
 
   if (isProcessingPaste) {
-    saveStatus.textContent = "截图处理中，请稍等";
+    setStatus("截图处理中，请稍等", "working");
     return;
   }
 
   isProcessingPaste = true;
-  saveStatus.textContent = "正在处理截图...";
+  setStatus("正在上传截图...", "working");
 
   try {
     for (const imageFile of images) {
@@ -277,7 +296,7 @@ noteInput.addEventListener("paste", async (event) => {
 
     saveCurrentDraft();
   } catch (error) {
-    saveStatus.textContent = "截图保存失败";
+    setStatus("截图保存失败", "error");
     console.error(error);
   } finally {
     isProcessingPaste = false;

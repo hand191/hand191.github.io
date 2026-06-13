@@ -17,10 +17,21 @@ export function hasLocalEmbeddedImage(html) {
   });
 }
 
+export function cleanRecordHtml(html) {
+  const template = document.createElement("template");
+  template.innerHTML = html;
+
+  for (const button of template.content.querySelectorAll(".image-remove")) {
+    button.remove();
+  }
+
+  return template.innerHTML;
+}
+
 export function createRecord(contentHtml, id) {
   return {
     id,
-    contentHtml,
+    contentHtml: cleanRecordHtml(contentHtml),
     createdAt: new Date().toISOString(),
   };
 }

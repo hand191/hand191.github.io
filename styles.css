@@ -46,10 +46,24 @@ p {
 .status {
   padding: 6px 10px;
   border-radius: 6px;
-  background: #e7f5ec;
-  color: #166534;
   font-size: 14px;
   white-space: nowrap;
+}
+
+.status,
+.status[data-tone="success"] {
+  background: #e7f5ec;
+  color: #166534;
+}
+
+.status[data-tone="working"] {
+  background: #fff7e6;
+  color: #9a5b00;
+}
+
+.status[data-tone="error"] {
+  background: #fff1f3;
+  color: #b42318;
 }
 
 .note-input {
@@ -182,6 +196,10 @@ p {
   background: #eaecf0;
   color: #98a2b3;
   cursor: not-allowed;
+}
+
+.record-card .image-remove {
+  display: none;
 }
 
 .section-heading {
