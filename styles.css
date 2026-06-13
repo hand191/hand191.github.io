@@ -343,6 +343,7 @@ p {
 }
 
 .record-card {
+  --dialog-offset: 44px;
   position: relative;
   padding: 5px 8px 14px;
   border: 1px solid #e4dfd3;
@@ -357,12 +358,14 @@ p {
 }
 
 .record-card-own {
+  margin-right: var(--dialog-offset);
   border-left-color: var(--author-color);
   border-right-color: #e4dfd3;
   box-shadow: inset 5px 0 0 rgba(31, 41, 55, 0.08);
 }
 
 .record-card-other {
+  margin-left: var(--dialog-offset);
   border-left-color: #e4dfd3;
   border-right: 8px solid var(--author-color);
   box-shadow: inset -5px 0 0 rgba(31, 41, 55, 0.08);
@@ -374,6 +377,8 @@ p {
   align-items: center;
   gap: 6px;
   margin-bottom: 2px;
+  min-height: 30px;
+  position: relative;
 }
 
 .record-time {
@@ -519,6 +524,19 @@ p {
   align-items: center;
   justify-content: flex-start;
   gap: 5px;
+  left: 50%;
+  position: absolute;
+  top: 0;
+  transform: translateX(-50%);
+  z-index: 1;
+}
+
+.record-card-own .record-more-actions {
+  transform: translateX(calc(-50% + var(--dialog-offset) / 2));
+}
+
+.record-card-other .record-more-actions {
+  transform: translateX(calc(-50% - var(--dialog-offset) / 2));
 }
 
 .record-actions {
@@ -625,6 +643,7 @@ p {
   }
 
   .record-card {
+    --dialog-offset: 24px;
     padding: 5px 7px 13px;
   }
 
