@@ -1,6 +1,13 @@
 import { debounce } from "./autosave.js?v=20260613-2";
 import { createImageAttachment, preparePastedImage } from "./images.js?v=20260613-2";
-import { addRecord, createRecord, isBlankHtml } from "./notes.js?v=20260613-2";
+import { loadCloudRecords, saveCloudRecord } from "./cloudStorage.js?v=20260613-3";
+import {
+  addRecord,
+  createRecord,
+  hasEmbeddedImage,
+  isBlankHtml,
+  mergeRecords,
+} from "./notes.js?v=20260613-3";
 import {
   clearDraft,
   isStorageQuotaError,
@@ -9,7 +16,7 @@ import {
   loadRecords,
   saveDraft,
   saveRecords,
-} from "./storage.js?v=20260613-2";
+} from "./storage.js?v=20260613-3";
 
 const noteInput = document.querySelector("#noteInput");
 const saveStatus = document.querySelector("#saveStatus");
@@ -138,7 +145,25 @@ function getSaveErrorMessage(error) {
   return "保存失败";
 }
 
-function archiveCurrentContent() {
+async function refreshCloudRecords() {
+  try {
+    const cloudRecords = await loadCloudRecords();
+
+    if (!cloudRecords) {
+      return;
+    }
+
+    records = mergeRecords(records, cloudRecords);
+    saveRecords(records);
+    renderRecords();
+    saveStatus.textContent = "已同步";
+  } catch (error) {
+    saveStatus.textContent = "同步失败，使用本机记录";
+    console.error(error);
+  }
+}
+
+async function archiveCurrentContent() {
   const contentHtml = noteInput.innerHTML;
 
   if (isBlankHtml(contentHtml)) {
@@ -146,8 +171,13 @@ function archiveCurrentContent() {
   }
 
   const nextRecords = addRecord(records, createRecord(contentHtml));
+  const nextRecord = nextRecords[0];
 
   try {
+    if (!hasEmbeddedImage(contentHtml)) {
+      await saveCloudRecord(nextRecord);
+    }
+
     saveRecords(nextRecords);
     clearDraft();
   } catch (error) {
@@ -168,6 +198,7 @@ noteInput.innerHTML = loadDraft();
 renderLastSavedTime();
 renderRecords();
 updateArchiveButton();
+refreshCloudRecords();
 
 noteInput.addEventListener("input", () => {
   saveStatus.textContent = "正在输入...";
