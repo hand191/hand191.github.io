@@ -1,14 +1,14 @@
-import { debounce } from "./autosave.js?v=20260613-16";
+import { debounce } from "./autosave.js?v=20260613-17";
 import {
   createImageAttachment,
   imageBlobToDataUrl,
   preparePastedImageBlob,
-} from "./images.js?v=20260613-16";
+} from "./images.js?v=20260613-17";
 import {
   loadCloudRecords,
   saveCloudRecord,
   uploadCloudImage,
-} from "./cloudStorage.js?v=20260613-16";
+} from "./cloudStorage.js?v=20260613-17";
 import {
   addRecord,
   cleanRecordHtml,
@@ -16,7 +16,7 @@ import {
   hasLocalEmbeddedImage,
   isBlankHtml,
   mergeRecords,
-} from "./notes.js?v=20260613-16";
+} from "./notes.js?v=20260613-17";
 import {
   clearDraft,
   clearRecords,
@@ -27,7 +27,7 @@ import {
   loadRecords,
   saveDraft,
   saveRecords,
-} from "./storage.js?v=20260613-16";
+} from "./storage.js?v=20260613-17";
 
 const noteInput = document.querySelector("#noteInput");
 const saveStatus = document.querySelector("#saveStatus");
@@ -45,6 +45,7 @@ let isArchiving = false;
 let replyParentId = null;
 let editingRecordId = null;
 let openReplyChainId = null;
+let openCommentFormId = null;
 
 function setStatus(message, tone = "neutral") {
   saveStatus.textContent = message;
@@ -107,7 +108,17 @@ function getRecordSummary(record) {
   return `${text.slice(0, 34)}...`;
 }
 
-function getAuthorBorderColor(value) {
+function createClientId() {
+  if (crypto.randomUUID) {
+    return crypto.randomUUID();
+  }
+
+  return `${Date.now()}-${Math.random().toString(16).slice(2)}`;
+}
+
+function getAuthorBorderColor(record) {
+  const value = record.authorColor || record.authorId;
+
   if (!value) {
     return null;
   }
@@ -116,6 +127,18 @@ function getAuthorBorderColor(value) {
   const namedColors = {
     blue: "#2563eb",
     red: "#ef4444",
+    wife: "#ef4444",
+    me: "#2563eb",
+    w: "#ef4444",
+    m: "#2563eb",
+    laopo: "#ef4444",
+    husband: "#2563eb",
+    "老婆": "#ef4444",
+    "我": "#2563eb",
+    "红": "#ef4444",
+    "红色": "#ef4444",
+    "蓝": "#2563eb",
+    "蓝色": "#2563eb",
   };
 
   if (namedColors[color]) {
@@ -207,6 +230,36 @@ function createCommentsPanel(record) {
   return panel;
 }
 
+function createCommentForm(record) {
+  const form = document.createElement("form");
+  form.className = "comment-form";
+  form.dataset.recordId = record.id;
+
+  const textarea = document.createElement("textarea");
+  textarea.className = "comment-input";
+  textarea.name = "comment";
+  textarea.rows = 3;
+  textarea.placeholder = "写一条评论...";
+
+  const actions = document.createElement("div");
+  actions.className = "comment-form-actions";
+
+  const cancelButton = document.createElement("button");
+  cancelButton.className = "comment-cancel-button";
+  cancelButton.type = "button";
+  cancelButton.textContent = "取消";
+
+  const submitButton = document.createElement("button");
+  submitButton.className = "comment-submit-button";
+  submitButton.type = "submit";
+  submitButton.textContent = "保存评论";
+
+  actions.append(cancelButton, submitButton);
+  form.append(textarea, actions);
+
+  return form;
+}
+
 function renderRecords() {
   recordCount.textContent = `${records.length} 条`;
   recordsList.innerHTML = "";
@@ -224,7 +277,7 @@ function renderRecords() {
     card.className = "record-card";
     card.dataset.recordId = record.id;
 
-    const authorBorderColor = getAuthorBorderColor(record.authorColor);
+    const authorBorderColor = getAuthorBorderColor(record);
 
     if (authorBorderColor) {
       card.classList.add("record-card-with-author");
@@ -295,6 +348,10 @@ function renderRecords() {
 
     if ((record.comments || []).length) {
       card.append(createCommentsPanel(record));
+    }
+
+    if (openCommentFormId === record.id) {
+      card.append(createCommentForm(record));
     }
 
     if (openReplyChainId === record.id) {
@@ -432,15 +489,16 @@ function startEdit(recordId) {
 }
 
 async function addComment(recordId) {
+  const textarea = recordsList.querySelector(".comment-input");
+  const text = textarea?.value;
   const record = records.find((currentRecord) => currentRecord.id === recordId);
 
   if (!record) {
     return;
   }
 
-  const text = window.prompt("给这条记录添加评论");
-
   if (!text?.trim()) {
+    setStatus("评论不能为空", "error");
     return;
   }
 
@@ -449,7 +507,7 @@ async function addComment(recordId) {
     comments: [
       ...(record.comments || []),
       {
-        id: crypto.randomUUID(),
+        id: createClientId(),
         text: text.trim(),
         createdAt: new Date().toISOString(),
       },
@@ -463,12 +521,23 @@ async function addComment(recordId) {
       requireComments: true,
     });
     records = nextRecords;
+    openCommentFormId = null;
     saveRecords(records);
     renderRecords();
     setStatus("评论已保存", "success");
   } catch (error) {
     setStatus(getSaveErrorMessage(error), "error");
     console.error(error);
+  }
+}
+
+function toggleCommentForm(recordId) {
+  openCommentFormId = openCommentFormId === recordId ? null : recordId;
+  renderRecords();
+  setStatus(openCommentFormId ? "正在添加评论" : "已取消评论", "success");
+
+  if (openCommentFormId) {
+    recordsList.querySelector(".comment-input")?.focus();
   }
 }
 
@@ -533,6 +602,7 @@ async function reloadFromCloud() {
     replyParentId = null;
     editingRecordId = null;
     openReplyChainId = null;
+    openCommentFormId = null;
     noteInput.innerHTML = "";
     clearDraft();
     clearRecords();
@@ -679,6 +749,15 @@ noteInput.addEventListener("keydown", (event) => {
 });
 
 recordsList.addEventListener("click", (event) => {
+  const commentCancelButton = event.target.closest(".comment-cancel-button");
+
+  if (commentCancelButton) {
+    openCommentFormId = null;
+    renderRecords();
+    setStatus("已取消评论", "success");
+    return;
+  }
+
   const editButton = event.target.closest(".edit-record-button");
 
   if (editButton) {
@@ -706,7 +785,7 @@ recordsList.addEventListener("click", (event) => {
 
   if (noteButton) {
     const card = noteButton.closest(".record-card");
-    addComment(card.dataset.recordId);
+    toggleCommentForm(card.dataset.recordId);
     return;
   }
 
@@ -725,6 +804,17 @@ recordsList.addEventListener("click", (event) => {
   }
 
   toggleImageAttachment(toggleButton);
+});
+
+recordsList.addEventListener("submit", (event) => {
+  const form = event.target.closest(".comment-form");
+
+  if (!form) {
+    return;
+  }
+
+  event.preventDefault();
+  addComment(form.dataset.recordId);
 });
 
 cancelReplyButton.addEventListener("click", cancelReply);

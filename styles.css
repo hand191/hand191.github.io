@@ -389,6 +389,59 @@ p {
   font-size: 12px;
 }
 
+.comment-form {
+  display: grid;
+  gap: 8px;
+  margin-top: 12px;
+  padding: 10px;
+  border: 1px solid #d6d3c8;
+  border-radius: 6px;
+  background: #ffffff;
+}
+
+.comment-input {
+  width: 100%;
+  min-height: 72px;
+  padding: 10px;
+  border: 1px solid #d6d3c8;
+  border-radius: 6px;
+  color: #344054;
+  font: inherit;
+  font-size: 14px;
+  line-height: 1.5;
+  resize: vertical;
+}
+
+.comment-input:focus {
+  border-color: #2563eb;
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12);
+}
+
+.comment-form-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.comment-cancel-button,
+.comment-submit-button {
+  padding: 6px 10px;
+  border: 1px solid #d6d3c8;
+  border-radius: 6px;
+  background: #ffffff;
+  color: #475467;
+  cursor: pointer;
+  font: inherit;
+  font-size: 13px;
+}
+
+.comment-submit-button {
+  border-color: #2563eb;
+  background: #2563eb;
+  color: #ffffff;
+}
+
 .record-more-actions {
   display: flex;
   align-items: center;
