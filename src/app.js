@@ -1,21 +1,21 @@
-import { debounce } from "./autosave.js?v=20260613-9";
+import { debounce } from "./autosave.js?v=20260613-11";
 import {
   createImageAttachment,
   imageBlobToDataUrl,
   preparePastedImageBlob,
-} from "./images.js?v=20260613-9";
+} from "./images.js?v=20260613-11";
 import {
   loadCloudRecords,
   saveCloudRecord,
   uploadCloudImage,
-} from "./cloudStorage.js?v=20260613-9";
+} from "./cloudStorage.js?v=20260613-11";
 import {
   addRecord,
   createRecord,
   hasLocalEmbeddedImage,
   isBlankHtml,
   mergeRecords,
-} from "./notes.js?v=20260613-9";
+} from "./notes.js?v=20260613-11";
 import {
   clearDraft,
   isStorageQuotaError,
@@ -25,7 +25,7 @@ import {
   loadRecords,
   saveDraft,
   saveRecords,
-} from "./storage.js?v=20260613-9";
+} from "./storage.js?v=20260613-11";
 
 const noteInput = document.querySelector("#noteInput");
 const saveStatus = document.querySelector("#saveStatus");
@@ -91,6 +91,20 @@ function renderRecords() {
     time.dateTime = record.createdAt;
     time.textContent = formatRecordTime(record.createdAt);
 
+    const header = document.createElement("div");
+    header.className = "record-header";
+
+    const actions = document.createElement("div");
+    actions.className = "record-actions";
+
+    const replyButton = document.createElement("button");
+    replyButton.className = "reply-button";
+    replyButton.type = "button";
+    replyButton.textContent = "回复";
+
+    actions.append(replyButton);
+    header.append(time, actions);
+
     const parent = records.find((currentRecord) => {
       return currentRecord.id === record.parentId;
     });
@@ -106,16 +120,8 @@ function renderRecords() {
     content.className = "record-content";
     content.innerHTML = record.contentHtml;
 
-    const actions = document.createElement("div");
-    actions.className = "record-actions";
-
-    const replyButton = document.createElement("button");
-    replyButton.className = "reply-button";
-    replyButton.type = "button";
-    replyButton.textContent = "回复";
-
-    actions.append(replyButton);
-    card.append(time, content, actions);
+    card.prepend(header);
+    card.append(content);
     recordsList.append(card);
   }
 }

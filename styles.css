@@ -271,17 +271,22 @@ p {
 }
 
 .record-card {
-  position: relative;
   padding: 16px;
   border: 1px solid #e4dfd3;
   border-radius: 8px;
   background: #fffdf7;
 }
 
-.record-card time {
-  display: block;
-  padding-right: 54px;
+.record-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
   margin-bottom: 10px;
+}
+
+.record-header time {
+  min-width: 0;
   color: #667085;
   font-size: 13px;
 }
@@ -309,9 +314,7 @@ p {
 }
 
 .record-actions {
-  position: absolute;
-  top: 12px;
-  right: 12px;
+  flex: 0 0 auto;
   margin: 0;
 }
 
@@ -394,9 +397,8 @@ p {
     padding: 14px;
   }
 
-  .record-actions {
-    top: 10px;
-    right: 10px;
+  .record-header {
+    gap: 10px;
   }
 
   .record-actions .reply-button {
