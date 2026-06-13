@@ -36,6 +36,11 @@ function toDatabaseRecord(record, options = {}) {
     databaseRecord.comments = record.comments || [];
   }
 
+  if (options.includeAuthor !== false) {
+    databaseRecord.author_id = record.authorId || null;
+    databaseRecord.author_color = record.authorColor || null;
+  }
+
   return databaseRecord;
 }
 
@@ -46,6 +51,8 @@ function fromDatabaseRecord(row) {
     contentHtml: row.content_html,
     createdAt: row.created_at,
     comments: row.comments || [],
+    authorId: row.author_id || null,
+    authorColor: row.author_color || null,
   };
 }
 
@@ -56,16 +63,28 @@ export async function loadCloudRecords() {
     return null;
   }
 
-  let { data, error } = await client
-    .from(CLOUD_RECORDS_TABLE)
-    .select("id, parent_id, content_html, created_at, comments")
-    .order("created_at", { ascending: false });
+  const selectRecords = (columns) => {
+    return client
+      .from(CLOUD_RECORDS_TABLE)
+      .select(columns)
+      .order("created_at", { ascending: false });
+  };
+
+  let { data, error } = await selectRecords(
+    "id, parent_id, content_html, created_at, comments, author_id, author_color"
+  );
+
+  if (error?.message?.includes("author_")) {
+    const fallback = await selectRecords(
+      "id, parent_id, content_html, created_at, comments"
+    );
+
+    data = fallback.data;
+    error = fallback.error;
+  }
 
   if (error?.message?.includes("comments")) {
-    const fallback = await client
-      .from(CLOUD_RECORDS_TABLE)
-      .select("id, parent_id, content_html, created_at")
-      .order("created_at", { ascending: false });
+    const fallback = await selectRecords("id, parent_id, content_html, created_at");
 
     data = fallback.data;
     error = fallback.error;
@@ -99,13 +118,27 @@ export async function saveCloudRecord(record, options = {}) {
           });
   };
 
-  let { error } = await writeRecord();
+  let writeOptions = {};
+  let { error } = await writeRecord(writeOptions);
 
   if (
-    error?.message?.includes("comments") &&
-    !options.requireComments
+    error?.message?.includes("author_") &&
+    !options.requireAuthor
   ) {
-    const fallback = await writeRecord({ includeComments: false });
+    writeOptions = {
+      ...writeOptions,
+      includeAuthor: false,
+    };
+    const fallback = await writeRecord(writeOptions);
+    error = fallback.error;
+  }
+
+  if (error?.message?.includes("comments") && !options.requireComments) {
+    writeOptions = {
+      ...writeOptions,
+      includeComments: false,
+    };
+    const fallback = await writeRecord(writeOptions);
     error = fallback.error;
   }
 

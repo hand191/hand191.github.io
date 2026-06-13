@@ -8,7 +8,9 @@ create table if not exists public.entries (
   parent_id text references public.entries(id),
   content_html text not null,
   created_at timestamptz not null default now(),
-  comments jsonb default '[]'::jsonb
+  comments jsonb default '[]'::jsonb,
+  author_id text,
+  author_color text
 );
 
 alter table public.entries enable row level security;
@@ -69,6 +71,12 @@ add column if not exists parent_id text references public.entries(id);
 
 alter table public.entries
 add column if not exists comments jsonb default '[]'::jsonb;
+
+alter table public.entries
+add column if not exists author_id text;
+
+alter table public.entries
+add column if not exists author_color text;
 
 drop policy if exists "Allow public update entries" on public.entries;
 

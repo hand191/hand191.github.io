@@ -1,14 +1,14 @@
-import { debounce } from "./autosave.js?v=20260613-15";
+import { debounce } from "./autosave.js?v=20260613-16";
 import {
   createImageAttachment,
   imageBlobToDataUrl,
   preparePastedImageBlob,
-} from "./images.js?v=20260613-15";
+} from "./images.js?v=20260613-16";
 import {
   loadCloudRecords,
   saveCloudRecord,
   uploadCloudImage,
-} from "./cloudStorage.js?v=20260613-15";
+} from "./cloudStorage.js?v=20260613-16";
 import {
   addRecord,
   cleanRecordHtml,
@@ -16,7 +16,7 @@ import {
   hasLocalEmbeddedImage,
   isBlankHtml,
   mergeRecords,
-} from "./notes.js?v=20260613-15";
+} from "./notes.js?v=20260613-16";
 import {
   clearDraft,
   clearRecords,
@@ -27,7 +27,7 @@ import {
   loadRecords,
   saveDraft,
   saveRecords,
-} from "./storage.js?v=20260613-15";
+} from "./storage.js?v=20260613-16";
 
 const noteInput = document.querySelector("#noteInput");
 const saveStatus = document.querySelector("#saveStatus");
@@ -105,6 +105,28 @@ function getRecordSummary(record) {
   }
 
   return `${text.slice(0, 34)}...`;
+}
+
+function getAuthorBorderColor(value) {
+  if (!value) {
+    return null;
+  }
+
+  const color = value.trim().toLowerCase();
+  const namedColors = {
+    blue: "#2563eb",
+    red: "#ef4444",
+  };
+
+  if (namedColors[color]) {
+    return namedColors[color];
+  }
+
+  if (/^#[0-9a-f]{3}([0-9a-f]{3})?$/i.test(color)) {
+    return color;
+  }
+
+  return null;
 }
 
 function buildReplyChain(recordId) {
@@ -201,6 +223,13 @@ function renderRecords() {
     const card = document.createElement("article");
     card.className = "record-card";
     card.dataset.recordId = record.id;
+
+    const authorBorderColor = getAuthorBorderColor(record.authorColor);
+
+    if (authorBorderColor) {
+      card.classList.add("record-card-with-author");
+      card.style.borderColor = authorBorderColor;
+    }
 
     const time = document.createElement("time");
     time.className = "record-time";
