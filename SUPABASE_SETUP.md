@@ -5,6 +5,7 @@ Run this SQL in Supabase SQL Editor:
 ```sql
 create table if not exists public.entries (
   id text primary key,
+  parent_id text references public.entries(id),
   content_html text not null,
   created_at timestamptz not null default now()
 );
@@ -46,3 +47,10 @@ with check (bucket_id = 'entry-images');
 ```
 
 The bucket should be public so pasted screenshots can be viewed from other devices through their public URLs.
+
+If your `entries` table already exists, run this once to enable replies:
+
+```sql
+alter table public.entries
+add column if not exists parent_id text references public.entries(id);
+```

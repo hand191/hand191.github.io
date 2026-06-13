@@ -28,9 +28,10 @@ export function cleanRecordHtml(html) {
   return template.innerHTML;
 }
 
-export function createRecord(contentHtml, id) {
+export function createRecord(contentHtml, id, parentId = null) {
   return {
     id,
+    parentId,
     contentHtml: cleanRecordHtml(contentHtml),
     createdAt: new Date().toISOString(),
   };

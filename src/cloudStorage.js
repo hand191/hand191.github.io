@@ -27,6 +27,7 @@ async function getSupabaseClient() {
 function toDatabaseRecord(record) {
   return {
     id: record.id,
+    parent_id: record.parentId,
     content_html: record.contentHtml,
     created_at: record.createdAt,
   };
@@ -35,6 +36,7 @@ function toDatabaseRecord(record) {
 function fromDatabaseRecord(row) {
   return {
     id: row.id,
+    parentId: row.parent_id,
     contentHtml: row.content_html,
     createdAt: row.created_at,
   };
@@ -49,7 +51,7 @@ export async function loadCloudRecords() {
 
   const { data, error } = await client
     .from(CLOUD_RECORDS_TABLE)
-    .select("id, content_html, created_at")
+    .select("id, parent_id, content_html, created_at")
     .order("created_at", { ascending: false });
 
   if (error) {
