@@ -1,14 +1,14 @@
-import { debounce } from "./autosave.js?v=20260613-14";
+import { debounce } from "./autosave.js?v=20260613-15";
 import {
   createImageAttachment,
   imageBlobToDataUrl,
   preparePastedImageBlob,
-} from "./images.js?v=20260613-14";
+} from "./images.js?v=20260613-15";
 import {
   loadCloudRecords,
   saveCloudRecord,
   uploadCloudImage,
-} from "./cloudStorage.js?v=20260613-14";
+} from "./cloudStorage.js?v=20260613-15";
 import {
   addRecord,
   cleanRecordHtml,
@@ -16,9 +16,10 @@ import {
   hasLocalEmbeddedImage,
   isBlankHtml,
   mergeRecords,
-} from "./notes.js?v=20260613-14";
+} from "./notes.js?v=20260613-15";
 import {
   clearDraft,
+  clearRecords,
   isStorageQuotaError,
   loadDraft,
   loadLastSavedAt,
@@ -26,10 +27,11 @@ import {
   loadRecords,
   saveDraft,
   saveRecords,
-} from "./storage.js?v=20260613-14";
+} from "./storage.js?v=20260613-15";
 
 const noteInput = document.querySelector("#noteInput");
 const saveStatus = document.querySelector("#saveStatus");
+const reloadButton = document.querySelector("#reloadButton");
 const lastSaved = document.querySelector("#lastSaved");
 const archiveButton = document.querySelector("#archiveButton");
 const recordCount = document.querySelector("#recordCount");
@@ -486,6 +488,39 @@ async function refreshCloudRecords() {
   }
 }
 
+async function reloadFromCloud() {
+  setStatus("正在重拉...", "working");
+  reloadButton.disabled = true;
+
+  try {
+    const cloudRecords = await loadCloudRecords();
+
+    if (!cloudRecords) {
+      setStatus("未配置数据库", "error");
+      return;
+    }
+
+    records = cloudRecords;
+    replyParentId = null;
+    editingRecordId = null;
+    openReplyChainId = null;
+    noteInput.innerHTML = "";
+    clearDraft();
+    clearRecords();
+    saveRecords(records);
+    renderLastSavedTime();
+    renderReplyState();
+    renderRecords();
+    updateArchiveButton();
+    setStatus("已从数据库重拉", "success");
+  } catch (error) {
+    setStatus(getSaveErrorMessage(error), "error");
+    console.error(error);
+  } finally {
+    reloadButton.disabled = false;
+  }
+}
+
 async function archiveCurrentContent() {
   if (isArchiving) {
     setStatus("正在归档，请稍等", "working");
@@ -664,5 +699,7 @@ recordsList.addEventListener("click", (event) => {
 });
 
 cancelReplyButton.addEventListener("click", cancelReply);
+
+reloadButton.addEventListener("click", reloadFromCloud);
 
 archiveButton.addEventListener("click", archiveCurrentContent);

@@ -46,6 +46,10 @@ export function saveRecords(records) {
   localStorage.setItem(RECORDS_KEY, JSON.stringify(records));
 }
 
+export function clearRecords() {
+  localStorage.removeItem(RECORDS_KEY);
+}
+
 export function loadRecords() {
   const value = localStorage.getItem(RECORDS_KEY);
 

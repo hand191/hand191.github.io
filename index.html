@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>我的信息入口</title>
-  <link rel="stylesheet" href="styles.css?v=20260613-14" />
+  <link rel="stylesheet" href="styles.css?v=20260613-15" />
 </head>
 <body>
   <main class="app">
@@ -14,7 +14,10 @@
           <h1>我的信息入口</h1>
           <p>随手记录想法、学习过程和项目线索。</p>
         </div>
-        <span id="saveStatus" class="status">已准备</span>
+        <div class="topbar-actions">
+          <button id="reloadButton" class="reload-button" type="button">重拉</button>
+          <span id="saveStatus" class="status">已准备</span>
+        </div>
       </div>
 
       <div
@@ -46,6 +49,6 @@
     </section>
   </main>
 
-  <script type="module" src="src/app.js?v=20260613-14"></script>
+  <script type="module" src="src/app.js?v=20260613-15"></script>
 </body>
 </html>
