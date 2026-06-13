@@ -15,16 +15,30 @@ export function hasEmbeddedImage(html) {
   return Boolean(template.content.querySelector("img"));
 }
 
-export function createRecord(contentHtml) {
+export function createRecord(contentHtml, id) {
   return {
-    id: createId(),
+    id,
     contentHtml,
     createdAt: new Date().toISOString(),
   };
 }
 
 export function addRecord(records, record) {
-  return [record, ...records];
+  const recordsById = new Map(records.map((currentRecord) => [
+    currentRecord.id,
+    currentRecord,
+  ]));
+
+  recordsById.set(record.id, record);
+
+  return [record, ...recordsById.values()]
+    .filter((currentRecord, index, allRecords) => {
+      return allRecords.findIndex((item) => item.id === currentRecord.id) === index;
+    })
+    .sort(
+      (recordA, recordB) =>
+        new Date(recordB.createdAt) - new Date(recordA.createdAt)
+    );
 }
 
 export function mergeRecords(localRecords, cloudRecords) {
@@ -37,12 +51,4 @@ export function mergeRecords(localRecords, cloudRecords) {
   return [...recordsById.values()].sort(
     (recordA, recordB) => new Date(recordB.createdAt) - new Date(recordA.createdAt)
   );
-}
-
-function createId() {
-  if (crypto.randomUUID) {
-    return crypto.randomUUID();
-  }
-
-  return `${Date.now()}-${Math.random().toString(16).slice(2)}`;
 }

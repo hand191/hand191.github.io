@@ -3,7 +3,7 @@ import {
   SUPABASE_ANON_KEY,
   SUPABASE_URL,
   isCloudConfigured,
-} from "./supabaseConfig.js?v=20260613-3";
+} from "./supabaseConfig.js?v=20260613-4";
 
 let supabaseClient;
 
@@ -67,7 +67,10 @@ export async function saveCloudRecord(record) {
 
   const { error } = await client
     .from(CLOUD_RECORDS_TABLE)
-    .insert(toDatabaseRecord(record));
+    .upsert(toDatabaseRecord(record), {
+      ignoreDuplicates: true,
+      onConflict: "id",
+    });
 
   if (error) {
     throw error;

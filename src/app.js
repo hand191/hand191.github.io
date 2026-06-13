@@ -1,22 +1,23 @@
-import { debounce } from "./autosave.js?v=20260613-2";
-import { createImageAttachment, preparePastedImage } from "./images.js?v=20260613-2";
-import { loadCloudRecords, saveCloudRecord } from "./cloudStorage.js?v=20260613-3";
+import { debounce } from "./autosave.js?v=20260613-4";
+import { createImageAttachment, preparePastedImage } from "./images.js?v=20260613-4";
+import { loadCloudRecords, saveCloudRecord } from "./cloudStorage.js?v=20260613-4";
 import {
   addRecord,
   createRecord,
   hasEmbeddedImage,
   isBlankHtml,
   mergeRecords,
-} from "./notes.js?v=20260613-3";
+} from "./notes.js?v=20260613-4";
 import {
   clearDraft,
   isStorageQuotaError,
   loadDraft,
   loadLastSavedAt,
+  loadOrCreateDraftId,
   loadRecords,
   saveDraft,
   saveRecords,
-} from "./storage.js?v=20260613-3";
+} from "./storage.js?v=20260613-4";
 
 const noteInput = document.querySelector("#noteInput");
 const saveStatus = document.querySelector("#saveStatus");
@@ -170,7 +171,10 @@ async function archiveCurrentContent() {
     return;
   }
 
-  const nextRecords = addRecord(records, createRecord(contentHtml));
+  const nextRecords = addRecord(
+    records,
+    createRecord(contentHtml, loadOrCreateDraftId())
+  );
   const nextRecord = nextRecords[0];
 
   try {
