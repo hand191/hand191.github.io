@@ -1,14 +1,14 @@
-import { debounce } from "./autosave.js?v=20260613-19";
+import { debounce } from "./autosave.js?v=20260613-20";
 import {
   createImageAttachment,
   imageBlobToDataUrl,
   preparePastedImageBlob,
-} from "./images.js?v=20260613-19";
+} from "./images.js?v=20260613-20";
 import {
   loadCloudRecords,
   saveCloudRecord,
   uploadCloudImage,
-} from "./cloudStorage.js?v=20260613-19";
+} from "./cloudStorage.js?v=20260613-20";
 import {
   addRecord,
   cleanRecordHtml,
@@ -16,7 +16,7 @@ import {
   hasLocalEmbeddedImage,
   isBlankHtml,
   mergeRecords,
-} from "./notes.js?v=20260613-19";
+} from "./notes.js?v=20260613-20";
 import {
   clearDraft,
   clearRecords,
@@ -29,7 +29,7 @@ import {
   saveDraft,
   saveRecords,
   saveSelectedAuthor,
-} from "./storage.js?v=20260613-19";
+} from "./storage.js?v=20260613-20";
 
 const noteInput = document.querySelector("#noteInput");
 const saveStatus = document.querySelector("#saveStatus");

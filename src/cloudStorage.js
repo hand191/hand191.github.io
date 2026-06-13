@@ -84,7 +84,9 @@ export async function loadCloudRecords() {
   }
 
   if (error?.message?.includes("comments")) {
-    const fallback = await selectRecords("id, parent_id, content_html, created_at");
+    const fallback = await selectRecords(
+      "id, parent_id, content_html, created_at, author_id, author_color"
+    );
 
     data = fallback.data;
     error = fallback.error;
