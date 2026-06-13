@@ -1,20 +1,20 @@
-import { debounce } from "./autosave.js?v=20260613-23";
+import { debounce } from "./autosave.js?v=20260613-24";
 import {
   AUTHORS,
   getAuthor,
   getRecordAuthorColor,
-} from "./authors.js?v=20260613-23";
+} from "./authors.js?v=20260613-24";
 import {
   createImageAttachment,
   imageBlobToDataUrl,
   preparePastedImageBlob,
-} from "./images.js?v=20260613-23";
+} from "./images.js?v=20260613-24";
 import {
   loadCloudRecords,
   saveCloudComment,
   saveCloudRecord,
   uploadCloudImage,
-} from "./cloudStorage.js?v=20260613-23";
+} from "./cloudStorage.js?v=20260613-24";
 import {
   addRecord,
   cleanRecordHtml,
@@ -22,7 +22,7 @@ import {
   hasLocalEmbeddedImage,
   isBlankHtml,
   mergeRecords,
-} from "./notes.js?v=20260613-23";
+} from "./notes.js?v=20260613-24";
 import {
   clearDraft,
   clearRecords,
@@ -35,7 +35,7 @@ import {
   saveDraft,
   saveRecords,
   saveSelectedAuthor,
-} from "./storage.js?v=20260613-23";
+} from "./storage.js?v=20260613-24";
 
 const noteInput = document.querySelector("#noteInput");
 const saveStatus = document.querySelector("#saveStatus");
@@ -296,11 +296,6 @@ function renderRecords() {
     const toolbar = document.createElement("div");
     toolbar.className = "record-toolbar";
 
-    const editButton = document.createElement("button");
-    editButton.className = "record-tool-button edit-record-button";
-    editButton.type = "button";
-    editButton.textContent = "编辑";
-
     const moreActions = document.createElement("div");
     moreActions.className = "record-more-actions";
 
@@ -330,7 +325,7 @@ function renderRecords() {
     replyButton.textContent = "回复";
 
     actions.append(replyButton);
-    toolbar.append(editButton, moreActions, actions);
+    toolbar.append(moreActions, actions);
 
     const parent = records.find((currentRecord) => {
       return currentRecord.id === record.parentId;
