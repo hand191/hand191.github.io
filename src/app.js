@@ -1,14 +1,14 @@
-import { debounce } from "./autosave.js?v=20260613-20";
+import { debounce } from "./autosave.js?v=20260613-21";
 import {
   createImageAttachment,
   imageBlobToDataUrl,
   preparePastedImageBlob,
-} from "./images.js?v=20260613-20";
+} from "./images.js?v=20260613-21";
 import {
   loadCloudRecords,
   saveCloudRecord,
   uploadCloudImage,
-} from "./cloudStorage.js?v=20260613-20";
+} from "./cloudStorage.js?v=20260613-21";
 import {
   addRecord,
   cleanRecordHtml,
@@ -16,7 +16,7 @@ import {
   hasLocalEmbeddedImage,
   isBlankHtml,
   mergeRecords,
-} from "./notes.js?v=20260613-20";
+} from "./notes.js?v=20260613-21";
 import {
   clearDraft,
   clearRecords,
@@ -29,7 +29,7 @@ import {
   saveDraft,
   saveRecords,
   saveSelectedAuthor,
-} from "./storage.js?v=20260613-20";
+} from "./storage.js?v=20260613-21";
 
 const noteInput = document.querySelector("#noteInput");
 const saveStatus = document.querySelector("#saveStatus");
@@ -200,6 +200,16 @@ function getAuthorBorderColor(record) {
   return null;
 }
 
+function getAuthorLabel(authorId) {
+  const legacyAuthorIds = {
+    me: "yingjun",
+    wife: "hongxia",
+  };
+  const normalizedAuthorId = legacyAuthorIds[authorId] || authorId;
+
+  return AUTHORS[normalizedAuthorId]?.label || "";
+}
+
 function buildReplyChain(recordId) {
   const recordsById = new Map(records.map((record) => [record.id, record]));
   const chain = [];
@@ -261,17 +271,30 @@ function createCommentsPanel(record) {
   for (const comment of comments) {
     const item = document.createElement("div");
     item.className = "comment-item";
+    const commentColor = getAuthorBorderColor({
+      authorId: comment.authorId,
+      authorColor: comment.authorColor,
+    });
+
+    if (commentColor) {
+      item.classList.add("comment-item-with-author");
+      item.style.setProperty("--comment-author-color", commentColor);
+    }
 
     const text = document.createElement("div");
     text.className = "comment-text";
     text.textContent = comment.text;
+
+    const meta = document.createElement("span");
+    meta.className = "comment-meta";
+    meta.textContent = getAuthorLabel(comment.authorId);
 
     const time = document.createElement("time");
     time.className = "comment-time";
     time.dateTime = comment.createdAt;
     time.textContent = formatCompactRecordTime(comment.createdAt);
 
-    item.append(text, time);
+    item.append(text, meta, time);
     panel.append(item);
   }
 
@@ -558,6 +581,8 @@ async function addComment(recordId) {
         id: createClientId(),
         text: text.trim(),
         createdAt: new Date().toISOString(),
+        authorId: getSelectedAuthor().id,
+        authorColor: getSelectedAuthor().color,
       },
     ],
   };
@@ -607,6 +632,10 @@ const autosaveDraft = debounce(() => {
 function getSaveErrorMessage(error) {
   if (isStorageQuotaError(error)) {
     return "保存失败：内容太大";
+  }
+
+  if (error?.message?.includes("comments")) {
+    return "保存失败：数据库缺少 comments 列";
   }
 
   if (error?.message) {
