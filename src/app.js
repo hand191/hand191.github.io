@@ -1,21 +1,21 @@
-import { debounce } from "./autosave.js?v=20260613-11";
+import { debounce } from "./autosave.js?v=20260613-12";
 import {
   createImageAttachment,
   imageBlobToDataUrl,
   preparePastedImageBlob,
-} from "./images.js?v=20260613-11";
+} from "./images.js?v=20260613-12";
 import {
   loadCloudRecords,
   saveCloudRecord,
   uploadCloudImage,
-} from "./cloudStorage.js?v=20260613-11";
+} from "./cloudStorage.js?v=20260613-12";
 import {
   addRecord,
   createRecord,
   hasLocalEmbeddedImage,
   isBlankHtml,
   mergeRecords,
-} from "./notes.js?v=20260613-11";
+} from "./notes.js?v=20260613-12";
 import {
   clearDraft,
   isStorageQuotaError,
@@ -25,7 +25,7 @@ import {
   loadRecords,
   saveDraft,
   saveRecords,
-} from "./storage.js?v=20260613-11";
+} from "./storage.js?v=20260613-12";
 
 const noteInput = document.querySelector("#noteInput");
 const saveStatus = document.querySelector("#saveStatus");
@@ -70,6 +70,27 @@ function formatRecordTime(value) {
   });
 }
 
+function getRecordSummary(record) {
+  const container = document.createElement("div");
+  container.innerHTML = record.contentHtml;
+
+  container.querySelectorAll(".image-remove").forEach((button) => {
+    button.remove();
+  });
+
+  const text = container.textContent.replace(/\s+/g, " ").trim();
+
+  if (!text) {
+    return "图片";
+  }
+
+  if (text.length <= 34) {
+    return text;
+  }
+
+  return `${text.slice(0, 34)}...`;
+}
+
 function renderRecords() {
   recordCount.textContent = `${records.length} 条`;
   recordsList.innerHTML = "";
@@ -112,7 +133,7 @@ function renderRecords() {
     if (parent) {
       const replyMeta = document.createElement("div");
       replyMeta.className = "reply-meta";
-      replyMeta.textContent = `回复 ${formatRecordTime(parent.createdAt)}`;
+      replyMeta.textContent = `回复：${getRecordSummary(parent)} · ${formatRecordTime(parent.createdAt)}`;
       card.append(replyMeta);
     }
 

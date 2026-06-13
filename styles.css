@@ -297,6 +297,8 @@ p {
   border-left: 3px solid #bfdbfe;
   color: #1d4ed8;
   font-size: 13px;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
 }
 
 .record-content {
