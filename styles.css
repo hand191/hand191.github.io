@@ -30,6 +30,7 @@ body {
   align-items: flex-start;
   gap: 16px;
   margin-bottom: 20px;
+  position: relative;
 }
 
 .topbar-actions {
@@ -37,6 +38,7 @@ body {
   align-items: center;
   justify-content: flex-end;
   gap: 8px;
+  grid-column: 3;
 }
 
 .role-switch {
@@ -47,6 +49,11 @@ body {
   border: 1px solid #d6d3c8;
   border-radius: 8px;
   background: #fffdf7;
+  position: absolute;
+  top: 0;
+  left: 50%;
+  z-index: 3;
+  transform: translateX(-50%);
 }
 
 .role-button {
@@ -522,16 +529,14 @@ p {
   }
 
   .role-switch {
-    grid-column: 1 / -1;
-    grid-row: 2;
-    justify-self: center;
-    order: 3;
+    top: 0;
   }
 
   .topbar-actions {
     align-items: flex-end;
     flex-direction: column;
     gap: 6px;
+    grid-column: 2;
   }
 
   h1 {

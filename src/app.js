@@ -1,14 +1,14 @@
-import { debounce } from "./autosave.js?v=20260613-18";
+import { debounce } from "./autosave.js?v=20260613-19";
 import {
   createImageAttachment,
   imageBlobToDataUrl,
   preparePastedImageBlob,
-} from "./images.js?v=20260613-18";
+} from "./images.js?v=20260613-19";
 import {
   loadCloudRecords,
   saveCloudRecord,
   uploadCloudImage,
-} from "./cloudStorage.js?v=20260613-18";
+} from "./cloudStorage.js?v=20260613-19";
 import {
   addRecord,
   cleanRecordHtml,
@@ -16,7 +16,7 @@ import {
   hasLocalEmbeddedImage,
   isBlankHtml,
   mergeRecords,
-} from "./notes.js?v=20260613-18";
+} from "./notes.js?v=20260613-19";
 import {
   clearDraft,
   clearRecords,
@@ -29,7 +29,7 @@ import {
   saveDraft,
   saveRecords,
   saveSelectedAuthor,
-} from "./storage.js?v=20260613-18";
+} from "./storage.js?v=20260613-19";
 
 const noteInput = document.querySelector("#noteInput");
 const saveStatus = document.querySelector("#saveStatus");
@@ -52,14 +52,14 @@ let openCommentFormId = null;
 let selectedAuthorId = loadSelectedAuthor();
 
 const AUTHORS = {
-  me: {
-    id: "me",
-    label: "我",
+  yingjun: {
+    id: "yingjun",
+    label: "英俊",
     color: "blue",
   },
-  wife: {
-    id: "wife",
-    label: "老婆",
+  hongxia: {
+    id: "hongxia",
+    label: "红霞",
     color: "red",
   },
 };
@@ -134,7 +134,13 @@ function createClientId() {
 }
 
 function getSelectedAuthor() {
-  return AUTHORS[selectedAuthorId] || AUTHORS.me;
+  const legacyAuthorIds = {
+    me: "yingjun",
+    wife: "hongxia",
+  };
+  const normalizedAuthorId = legacyAuthorIds[selectedAuthorId] || selectedAuthorId;
+
+  return AUTHORS[normalizedAuthorId] || AUTHORS.yingjun;
 }
 
 function renderRoleSwitch() {
@@ -148,7 +154,7 @@ function renderRoleSwitch() {
 }
 
 function selectAuthor(authorId) {
-  selectedAuthorId = AUTHORS[authorId] ? authorId : "me";
+  selectedAuthorId = AUTHORS[authorId] ? authorId : "yingjun";
   saveSelectedAuthor(selectedAuthorId);
   renderRoleSwitch();
   setStatus(`当前用户：${getSelectedAuthor().label}`, "success");
@@ -167,12 +173,16 @@ function getAuthorBorderColor(record) {
     red: "#ef4444",
     wife: "#ef4444",
     me: "#2563eb",
+    hongxia: "#ef4444",
+    yingjun: "#2563eb",
     w: "#ef4444",
     m: "#2563eb",
     laopo: "#ef4444",
     husband: "#2563eb",
     "老婆": "#ef4444",
     "我": "#2563eb",
+    "红霞": "#ef4444",
+    "英俊": "#2563eb",
     "红": "#ef4444",
     "红色": "#ef4444",
     "蓝": "#2563eb",
@@ -695,7 +705,10 @@ async function archiveCurrentContent() {
 
   try {
     if (!hasLocalEmbeddedImage(contentHtml)) {
-      await saveCloudRecord(nextRecord, { updateExisting: wasEditing });
+      await saveCloudRecord(nextRecord, {
+        updateExisting: wasEditing,
+        requireAuthor: Boolean(nextRecord.authorId || nextRecord.authorColor),
+      });
     }
 
     saveRecords(nextRecords);

@@ -56,7 +56,7 @@ export function saveSelectedAuthor(authorId) {
 }
 
 export function loadSelectedAuthor() {
-  return localStorage.getItem(SELECTED_AUTHOR_KEY) || "me";
+  return localStorage.getItem(SELECTED_AUTHOR_KEY) || "yingjun";
 }
 
 export function loadRecords() {
