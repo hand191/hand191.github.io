@@ -1,5 +1,5 @@
 import { debounce } from "./autosave.js";
-import { createImageElement, preparePastedImage } from "./images.js";
+import { createImageAttachment, preparePastedImage } from "./images.js";
 import { loadDraft, loadLastSavedAt, saveDraft } from "./storage.js";
 
 const noteInput = document.querySelector("#noteInput");
@@ -61,6 +61,12 @@ function getPastedImageFiles(event) {
     .filter(Boolean);
 }
 
+function toggleImageAttachment(button) {
+  const attachment = button.closest(".image-attachment");
+  const image = attachment.querySelector(".image-preview");
+  image.hidden = !image.hidden;
+}
+
 const autosaveDraft = debounce(() => {
   saveCurrentDraft();
 }, 600);
@@ -88,7 +94,7 @@ noteInput.addEventListener("paste", async (event) => {
   try {
     for (const imageFile of images) {
       const imageDataUrl = await preparePastedImage(imageFile);
-      insertNodeAtCursor(createImageElement(imageDataUrl));
+      insertNodeAtCursor(createImageAttachment(imageDataUrl));
       insertNodeAtCursor(document.createElement("br"));
     }
 
@@ -97,4 +103,14 @@ noteInput.addEventListener("paste", async (event) => {
     saveStatus.textContent = "截图保存失败";
     console.error(error);
   }
+});
+
+noteInput.addEventListener("click", (event) => {
+  const toggleButton = event.target.closest(".image-toggle");
+
+  if (!toggleButton) {
+    return;
+  }
+
+  toggleImageAttachment(toggleButton);
 });

@@ -36,9 +36,31 @@ export async function preparePastedImage(file) {
   return canvas.toDataURL("image/jpeg", IMAGE_QUALITY);
 }
 
-export function createImageElement(src) {
+function formatAttachmentTitle() {
+  const date = new Date();
+
+  return `截图 ${date.toLocaleString("zh-CN", {
+    dateStyle: "medium",
+    timeStyle: "short",
+  })}`;
+}
+
+export function createImageAttachment(src) {
+  const attachment = document.createElement("figure");
+  attachment.className = "image-attachment";
+  attachment.contentEditable = "false";
+
+  const button = document.createElement("button");
+  button.className = "image-toggle";
+  button.type = "button";
+  button.textContent = formatAttachmentTitle();
+
   const image = document.createElement("img");
+  image.className = "image-preview";
   image.src = src;
   image.alt = "粘贴的截图";
-  return image;
+  image.hidden = true;
+
+  attachment.append(button, image);
+  return attachment;
 }
