@@ -55,6 +55,12 @@ with check (bucket_id = 'entry-images');
 
 The bucket should be public so pasted screenshots can be viewed from other devices through their public URLs.
 
+Apple Shortcuts can write directly through the Supabase REST API. See:
+
+```text
+APPLE_SHORTCUT_API.md
+```
+
 If your `entries` table already exists, run this once to enable replies:
 
 ```sql
