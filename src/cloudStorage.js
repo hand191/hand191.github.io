@@ -71,7 +71,6 @@ export async function saveCloudRecord(record) {
   const { error } = await client
     .from(CLOUD_RECORDS_TABLE)
     .upsert(toDatabaseRecord(record), {
-      ignoreDuplicates: true,
       onConflict: "id",
     });
 

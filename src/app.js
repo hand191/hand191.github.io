@@ -1,21 +1,22 @@
-import { debounce } from "./autosave.js?v=20260613-12";
+import { debounce } from "./autosave.js?v=20260613-13";
 import {
   createImageAttachment,
   imageBlobToDataUrl,
   preparePastedImageBlob,
-} from "./images.js?v=20260613-12";
+} from "./images.js?v=20260613-13";
 import {
   loadCloudRecords,
   saveCloudRecord,
   uploadCloudImage,
-} from "./cloudStorage.js?v=20260613-12";
+} from "./cloudStorage.js?v=20260613-13";
 import {
   addRecord,
+  cleanRecordHtml,
   createRecord,
   hasLocalEmbeddedImage,
   isBlankHtml,
   mergeRecords,
-} from "./notes.js?v=20260613-12";
+} from "./notes.js?v=20260613-13";
 import {
   clearDraft,
   isStorageQuotaError,
@@ -25,7 +26,7 @@ import {
   loadRecords,
   saveDraft,
   saveRecords,
-} from "./storage.js?v=20260613-12";
+} from "./storage.js?v=20260613-13";
 
 const noteInput = document.querySelector("#noteInput");
 const saveStatus = document.querySelector("#saveStatus");
@@ -40,6 +41,7 @@ let records = loadRecords();
 let isProcessingPaste = false;
 let isArchiving = false;
 let replyParentId = null;
+let editingRecordId = null;
 
 function setStatus(message, tone = "neutral") {
   saveStatus.textContent = message;
@@ -68,6 +70,17 @@ function formatRecordTime(value) {
     dateStyle: "medium",
     timeStyle: "short",
   });
+}
+
+function formatCompactRecordTime(value) {
+  const date = new Date(value);
+  const year = date.getFullYear();
+  const month = date.getMonth() + 1;
+  const day = date.getDate();
+  const hours = String(date.getHours()).padStart(2, "0");
+  const minutes = String(date.getMinutes()).padStart(2, "0");
+
+  return `${year}.${month}.${day} ${hours}:${minutes}`;
 }
 
 function getRecordSummary(record) {
@@ -109,11 +122,37 @@ function renderRecords() {
     card.dataset.recordId = record.id;
 
     const time = document.createElement("time");
+    time.className = "record-time";
     time.dateTime = record.createdAt;
-    time.textContent = formatRecordTime(record.createdAt);
+    time.textContent = formatCompactRecordTime(record.createdAt);
 
-    const header = document.createElement("div");
-    header.className = "record-header";
+    const toolbar = document.createElement("div");
+    toolbar.className = "record-toolbar";
+
+    const editButton = document.createElement("button");
+    editButton.className = "record-tool-button edit-record-button";
+    editButton.type = "button";
+    editButton.textContent = "编辑";
+
+    const moreActions = document.createElement("div");
+    moreActions.className = "record-more-actions";
+
+    const moreButton = document.createElement("button");
+    moreButton.className = "record-tool-button more-button";
+    moreButton.type = "button";
+    moreButton.textContent = "⋯";
+
+    const chainButton = document.createElement("button");
+    chainButton.className = "record-tool-button reply-chain-button";
+    chainButton.type = "button";
+    chainButton.textContent = "查看回复链";
+
+    const noteButton = document.createElement("button");
+    noteButton.className = "record-tool-button note-button";
+    noteButton.type = "button";
+    noteButton.textContent = "编辑备注";
+
+    moreActions.append(moreButton, chainButton, noteButton);
 
     const actions = document.createElement("div");
     actions.className = "record-actions";
@@ -124,7 +163,7 @@ function renderRecords() {
     replyButton.textContent = "回复";
 
     actions.append(replyButton);
-    header.append(time, actions);
+    toolbar.append(editButton, moreActions, actions);
 
     const parent = records.find((currentRecord) => {
       return currentRecord.id === record.parentId;
@@ -141,14 +180,15 @@ function renderRecords() {
     content.className = "record-content";
     content.innerHTML = record.contentHtml;
 
-    card.prepend(header);
-    card.append(content);
+    card.prepend(toolbar);
+    card.append(content, time);
     recordsList.append(card);
   }
 }
 
 function updateArchiveButton() {
   archiveButton.disabled = isArchiving || isBlankHtml(noteInput.innerHTML);
+  archiveButton.textContent = editingRecordId ? "更新当前记录" : "归档当前内容";
 }
 
 function saveCurrentDraft() {
@@ -254,6 +294,23 @@ function cancelReply() {
   setStatus("已取消回复", "success");
 }
 
+function startEdit(recordId) {
+  const record = records.find((currentRecord) => currentRecord.id === recordId);
+
+  if (!record) {
+    return;
+  }
+
+  editingRecordId = record.id;
+  replyParentId = record.parentId;
+  noteInput.innerHTML = record.contentHtml;
+  saveDraft(record.contentHtml);
+  renderReplyState();
+  updateArchiveButton();
+  noteInput.focus();
+  setStatus("正在编辑一条记录", "working");
+}
+
 const autosaveDraft = debounce(() => {
   try {
     saveCurrentDraft();
@@ -302,14 +359,20 @@ async function archiveCurrentContent() {
   }
 
   isArchiving = true;
-  setStatus("正在归档...", "working");
+  setStatus(editingRecordId ? "正在更新..." : "正在归档...", "working");
   updateArchiveButton();
 
-  const nextRecords = addRecord(
-    records,
-    createRecord(contentHtml, loadOrCreateDraftId(), replyParentId)
-  );
-  const nextRecord = nextRecords[0];
+  const wasEditing = Boolean(editingRecordId);
+  const editedRecord = records.find((record) => record.id === editingRecordId);
+  const recordId = editingRecordId || loadOrCreateDraftId();
+  const nextRecord = wasEditing && editedRecord
+    ? {
+        ...editedRecord,
+        contentHtml: cleanRecordHtml(contentHtml),
+        parentId: replyParentId,
+      }
+    : createRecord(contentHtml, recordId, replyParentId);
+  const nextRecords = addRecord(records, nextRecord);
 
   try {
     if (!hasLocalEmbeddedImage(contentHtml)) {
@@ -328,8 +391,9 @@ async function archiveCurrentContent() {
 
   records = nextRecords;
   replyParentId = null;
+  editingRecordId = null;
   noteInput.innerHTML = "";
-  setStatus("已归档并同步", "success");
+  setStatus(wasEditing ? "已更新并同步" : "已归档并同步", "success");
   renderLastSavedTime();
   renderRecords();
   renderReplyState();
@@ -411,6 +475,35 @@ noteInput.addEventListener("keydown", (event) => {
 });
 
 recordsList.addEventListener("click", (event) => {
+  const editButton = event.target.closest(".edit-record-button");
+
+  if (editButton) {
+    const card = editButton.closest(".record-card");
+    startEdit(card.dataset.recordId);
+    return;
+  }
+
+  const chainButton = event.target.closest(".reply-chain-button");
+
+  if (chainButton) {
+    setStatus("回复链入口已就绪", "working");
+    return;
+  }
+
+  const moreButton = event.target.closest(".more-button");
+
+  if (moreButton) {
+    setStatus("更多操作入口已就绪", "working");
+    return;
+  }
+
+  const noteButton = event.target.closest(".note-button");
+
+  if (noteButton) {
+    setStatus("备注入口已就绪", "working");
+    return;
+  }
+
   const replyButton = event.target.closest(".reply-button");
 
   if (replyButton) {
