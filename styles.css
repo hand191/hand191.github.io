@@ -271,6 +271,7 @@ p {
 }
 
 .record-card {
+  position: relative;
   padding: 16px;
   border: 1px solid #e4dfd3;
   border-radius: 8px;
@@ -279,6 +280,7 @@ p {
 
 .record-card time {
   display: block;
+  padding-right: 54px;
   margin-bottom: 10px;
   color: #667085;
   font-size: 13px;
@@ -307,9 +309,20 @@ p {
 }
 
 .record-actions {
-  display: flex;
-  justify-content: flex-end;
-  margin-top: 12px;
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  margin: 0;
+}
+
+.record-actions .reply-button {
+  min-width: 44px;
+  padding: 5px 8px;
+  border-color: #d6d3c8;
+  background: #ffffff;
+  color: #475467;
+  font-size: 13px;
+  line-height: 1.2;
 }
 
 @media (max-width: 640px) {
@@ -373,8 +386,24 @@ p {
     flex-direction: column;
   }
 
-  .reply-banner button,
-  .reply-button {
+  .reply-banner button {
     width: 100%;
+  }
+
+  .record-card {
+    padding: 14px;
+  }
+
+  .record-actions {
+    top: 10px;
+    right: 10px;
+  }
+
+  .record-actions .reply-button {
+    width: auto;
+    min-width: 42px;
+    min-height: 32px;
+    padding: 5px 8px;
+    font-size: 13px;
   }
 }
