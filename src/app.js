@@ -1,6 +1,6 @@
-import { debounce } from "./autosave.js";
-import { createImageAttachment, preparePastedImage } from "./images.js";
-import { addRecord, createRecord, isBlankHtml } from "./notes.js";
+import { debounce } from "./autosave.js?v=20260613-1";
+import { createImageAttachment, preparePastedImage } from "./images.js?v=20260613-1";
+import { addRecord, createRecord, isBlankHtml } from "./notes.js?v=20260613-1";
 import {
   clearDraft,
   isStorageQuotaError,
@@ -9,7 +9,7 @@ import {
   loadRecords,
   saveDraft,
   saveRecords,
-} from "./storage.js";
+} from "./storage.js?v=20260613-1";
 
 const noteInput = document.querySelector("#noteInput");
 const saveStatus = document.querySelector("#saveStatus");
