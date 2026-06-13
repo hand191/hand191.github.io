@@ -1,14 +1,14 @@
-import { debounce } from "./autosave.js?v=20260613-17";
+import { debounce } from "./autosave.js?v=20260613-18";
 import {
   createImageAttachment,
   imageBlobToDataUrl,
   preparePastedImageBlob,
-} from "./images.js?v=20260613-17";
+} from "./images.js?v=20260613-18";
 import {
   loadCloudRecords,
   saveCloudRecord,
   uploadCloudImage,
-} from "./cloudStorage.js?v=20260613-17";
+} from "./cloudStorage.js?v=20260613-18";
 import {
   addRecord,
   cleanRecordHtml,
@@ -16,7 +16,7 @@ import {
   hasLocalEmbeddedImage,
   isBlankHtml,
   mergeRecords,
-} from "./notes.js?v=20260613-17";
+} from "./notes.js?v=20260613-18";
 import {
   clearDraft,
   clearRecords,
@@ -25,13 +25,16 @@ import {
   loadLastSavedAt,
   loadOrCreateDraftId,
   loadRecords,
+  loadSelectedAuthor,
   saveDraft,
   saveRecords,
-} from "./storage.js?v=20260613-17";
+  saveSelectedAuthor,
+} from "./storage.js?v=20260613-18";
 
 const noteInput = document.querySelector("#noteInput");
 const saveStatus = document.querySelector("#saveStatus");
 const reloadButton = document.querySelector("#reloadButton");
+const roleButtons = document.querySelectorAll(".role-button");
 const lastSaved = document.querySelector("#lastSaved");
 const archiveButton = document.querySelector("#archiveButton");
 const recordCount = document.querySelector("#recordCount");
@@ -46,6 +49,20 @@ let replyParentId = null;
 let editingRecordId = null;
 let openReplyChainId = null;
 let openCommentFormId = null;
+let selectedAuthorId = loadSelectedAuthor();
+
+const AUTHORS = {
+  me: {
+    id: "me",
+    label: "我",
+    color: "blue",
+  },
+  wife: {
+    id: "wife",
+    label: "老婆",
+    color: "red",
+  },
+};
 
 function setStatus(message, tone = "neutral") {
   saveStatus.textContent = message;
@@ -114,6 +131,27 @@ function createClientId() {
   }
 
   return `${Date.now()}-${Math.random().toString(16).slice(2)}`;
+}
+
+function getSelectedAuthor() {
+  return AUTHORS[selectedAuthorId] || AUTHORS.me;
+}
+
+function renderRoleSwitch() {
+  const selectedAuthor = getSelectedAuthor();
+
+  roleButtons.forEach((button) => {
+    const isActive = button.dataset.authorId === selectedAuthor.id;
+    button.classList.toggle("role-button-active", isActive);
+    button.setAttribute("aria-pressed", String(isActive));
+  });
+}
+
+function selectAuthor(authorId) {
+  selectedAuthorId = AUTHORS[authorId] ? authorId : "me";
+  saveSelectedAuthor(selectedAuthorId);
+  renderRoleSwitch();
+  setStatus(`当前用户：${getSelectedAuthor().label}`, "success");
 }
 
 function getAuthorBorderColor(record) {
@@ -281,7 +319,7 @@ function renderRecords() {
 
     if (authorBorderColor) {
       card.classList.add("record-card-with-author");
-      card.style.borderColor = authorBorderColor;
+      card.style.setProperty("--author-color", authorBorderColor);
     }
 
     const time = document.createElement("time");
@@ -646,6 +684,13 @@ async function archiveCurrentContent() {
         parentId: replyParentId,
       }
     : createRecord(contentHtml, recordId, replyParentId);
+
+  if (!wasEditing) {
+    const selectedAuthor = getSelectedAuthor();
+    nextRecord.authorId = selectedAuthor.id;
+    nextRecord.authorColor = selectedAuthor.color;
+  }
+
   const nextRecords = addRecord(records, nextRecord);
 
   try {
@@ -676,6 +721,7 @@ async function archiveCurrentContent() {
 }
 
 noteInput.innerHTML = loadDraft();
+renderRoleSwitch();
 renderLastSavedTime();
 renderRecords();
 updateArchiveButton();
@@ -815,6 +861,12 @@ recordsList.addEventListener("submit", (event) => {
 
   event.preventDefault();
   addComment(form.dataset.recordId);
+});
+
+roleButtons.forEach((button) => {
+  button.addEventListener("click", () => {
+    selectAuthor(button.dataset.authorId);
+  });
 });
 
 cancelReplyButton.addEventListener("click", cancelReply);

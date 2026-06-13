@@ -2,6 +2,7 @@ const DRAFT_KEY = "personal-entry-draft";
 const DRAFT_ID_KEY = "personal-entry-draft-id";
 const LAST_SAVED_KEY = "personal-entry-last-saved";
 const RECORDS_KEY = "personal-entry-records";
+const SELECTED_AUTHOR_KEY = "personal-entry-selected-author";
 
 export function isStorageQuotaError(error) {
   return (
@@ -48,6 +49,14 @@ export function saveRecords(records) {
 
 export function clearRecords() {
   localStorage.removeItem(RECORDS_KEY);
+}
+
+export function saveSelectedAuthor(authorId) {
+  localStorage.setItem(SELECTED_AUTHOR_KEY, authorId);
+}
+
+export function loadSelectedAuthor() {
+  return localStorage.getItem(SELECTED_AUTHOR_KEY) || "me";
 }
 
 export function loadRecords() {

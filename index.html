@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>我的信息入口</title>
-  <link rel="stylesheet" href="styles.css?v=20260613-17" />
+  <link rel="stylesheet" href="styles.css?v=20260613-18" />
 </head>
 <body>
   <main class="app">
@@ -13,6 +13,10 @@
         <div>
           <h1>我的信息入口</h1>
           <p>随手记录想法、学习过程和项目线索。</p>
+        </div>
+        <div class="role-switch" aria-label="当前记录用户">
+          <button id="meRoleButton" class="role-button" type="button" data-author-id="me">我</button>
+          <button id="wifeRoleButton" class="role-button" type="button" data-author-id="wife">老婆</button>
         </div>
         <div class="topbar-actions">
           <button id="reloadButton" class="reload-button" type="button">重拉</button>
@@ -49,6 +53,6 @@
     </section>
   </main>
 
-  <script type="module" src="src/app.js?v=20260613-17"></script>
+  <script type="module" src="src/app.js?v=20260613-18"></script>
 </body>
 </html>
