@@ -1,21 +1,21 @@
-import { debounce } from "./autosave.js?v=20260613-6";
+import { debounce } from "./autosave.js?v=20260613-7";
 import {
   createImageAttachment,
   imageBlobToDataUrl,
   preparePastedImageBlob,
-} from "./images.js?v=20260613-6";
+} from "./images.js?v=20260613-7";
 import {
   loadCloudRecords,
   saveCloudRecord,
   uploadCloudImage,
-} from "./cloudStorage.js?v=20260613-6";
+} from "./cloudStorage.js?v=20260613-7";
 import {
   addRecord,
   createRecord,
   hasLocalEmbeddedImage,
   isBlankHtml,
   mergeRecords,
-} from "./notes.js?v=20260613-6";
+} from "./notes.js?v=20260613-7";
 import {
   clearDraft,
   isStorageQuotaError,
@@ -25,7 +25,7 @@ import {
   loadRecords,
   saveDraft,
   saveRecords,
-} from "./storage.js?v=20260613-6";
+} from "./storage.js?v=20260613-7";
 
 const noteInput = document.querySelector("#noteInput");
 const saveStatus = document.querySelector("#saveStatus");
@@ -34,6 +34,7 @@ const archiveButton = document.querySelector("#archiveButton");
 const recordCount = document.querySelector("#recordCount");
 const recordsList = document.querySelector("#recordsList");
 let records = loadRecords();
+let isProcessingPaste = false;
 
 function formatSavedTime(value) {
   if (!value) {
@@ -154,6 +155,19 @@ function toggleImageAttachment(button) {
   image.hidden = !image.hidden;
 }
 
+function removeImageAttachment(button) {
+  const attachment = button.closest(".image-attachment");
+  const nextNode = attachment.nextSibling;
+
+  attachment.remove();
+
+  if (nextNode?.nodeName === "BR") {
+    nextNode.remove();
+  }
+
+  saveCurrentDraft();
+}
+
 const autosaveDraft = debounce(() => {
   try {
     saveCurrentDraft();
@@ -245,6 +259,13 @@ noteInput.addEventListener("paste", async (event) => {
   }
 
   event.preventDefault();
+
+  if (isProcessingPaste) {
+    saveStatus.textContent = "截图处理中，请稍等";
+    return;
+  }
+
+  isProcessingPaste = true;
   saveStatus.textContent = "正在处理截图...";
 
   try {
@@ -258,10 +279,19 @@ noteInput.addEventListener("paste", async (event) => {
   } catch (error) {
     saveStatus.textContent = "截图保存失败";
     console.error(error);
+  } finally {
+    isProcessingPaste = false;
   }
 });
 
 noteInput.addEventListener("click", (event) => {
+  const removeButton = event.target.closest(".image-remove");
+
+  if (removeButton) {
+    removeImageAttachment(removeButton);
+    return;
+  }
+
   const toggleButton = event.target.closest(".image-toggle");
 
   if (!toggleButton) {

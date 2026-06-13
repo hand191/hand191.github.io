@@ -77,12 +77,17 @@ export function createImageAttachment(src) {
   button.type = "button";
   button.textContent = formatAttachmentTitle();
 
+  const removeButton = document.createElement("button");
+  removeButton.className = "image-remove";
+  removeButton.type = "button";
+  removeButton.textContent = "移除";
+
   const image = document.createElement("img");
   image.className = "image-preview";
   image.src = src;
   image.alt = "粘贴的截图";
   image.hidden = true;
 
-  attachment.append(button, image);
+  attachment.append(button, removeButton, image);
   return attachment;
 }
