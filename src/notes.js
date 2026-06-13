@@ -34,6 +34,7 @@ export function createRecord(contentHtml, id, parentId = null) {
     parentId,
     contentHtml: cleanRecordHtml(contentHtml),
     createdAt: new Date().toISOString(),
+    comments: [],
   };
 }
 

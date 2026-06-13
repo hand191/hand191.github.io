@@ -1,14 +1,14 @@
-import { debounce } from "./autosave.js?v=20260613-13";
+import { debounce } from "./autosave.js?v=20260613-14";
 import {
   createImageAttachment,
   imageBlobToDataUrl,
   preparePastedImageBlob,
-} from "./images.js?v=20260613-13";
+} from "./images.js?v=20260613-14";
 import {
   loadCloudRecords,
   saveCloudRecord,
   uploadCloudImage,
-} from "./cloudStorage.js?v=20260613-13";
+} from "./cloudStorage.js?v=20260613-14";
 import {
   addRecord,
   cleanRecordHtml,
@@ -16,7 +16,7 @@ import {
   hasLocalEmbeddedImage,
   isBlankHtml,
   mergeRecords,
-} from "./notes.js?v=20260613-13";
+} from "./notes.js?v=20260613-14";
 import {
   clearDraft,
   isStorageQuotaError,
@@ -26,7 +26,7 @@ import {
   loadRecords,
   saveDraft,
   saveRecords,
-} from "./storage.js?v=20260613-13";
+} from "./storage.js?v=20260613-14";
 
 const noteInput = document.querySelector("#noteInput");
 const saveStatus = document.querySelector("#saveStatus");
@@ -42,6 +42,7 @@ let isProcessingPaste = false;
 let isArchiving = false;
 let replyParentId = null;
 let editingRecordId = null;
+let openReplyChainId = null;
 
 function setStatus(message, tone = "neutral") {
   saveStatus.textContent = message;
@@ -104,6 +105,84 @@ function getRecordSummary(record) {
   return `${text.slice(0, 34)}...`;
 }
 
+function buildReplyChain(recordId) {
+  const recordsById = new Map(records.map((record) => [record.id, record]));
+  const chain = [];
+  const visitedIds = new Set();
+  let currentRecord = recordsById.get(recordId);
+
+  while (currentRecord && !visitedIds.has(currentRecord.id)) {
+    chain.unshift(currentRecord);
+    visitedIds.add(currentRecord.id);
+    currentRecord = recordsById.get(currentRecord.parentId);
+  }
+
+  return chain;
+}
+
+function createReplyChainPanel(recordId) {
+  const chain = buildReplyChain(recordId);
+  const panel = document.createElement("div");
+  panel.className = "reply-chain-panel";
+
+  if (chain.length <= 1) {
+    panel.textContent = "这条记录前面没有回复链。";
+    return panel;
+  }
+
+  for (const chainRecord of chain) {
+    const item = document.createElement("div");
+    item.className = "reply-chain-item";
+
+    const time = document.createElement("span");
+    time.className = "reply-chain-time";
+    time.textContent = formatCompactRecordTime(chainRecord.createdAt);
+
+    const summary = document.createElement("span");
+    summary.className = "reply-chain-summary";
+    summary.textContent = getRecordSummary(chainRecord);
+
+    item.append(time, summary);
+    panel.append(item);
+  }
+
+  return panel;
+}
+
+function createCommentsPanel(record) {
+  const panel = document.createElement("div");
+  panel.className = "comments-panel";
+
+  const comments = record.comments || [];
+
+  if (!comments.length) {
+    const empty = document.createElement("div");
+    empty.className = "empty-comments";
+    empty.textContent = "还没有评论";
+    panel.append(empty);
+    return panel;
+  }
+
+  for (const comment of comments) {
+    const item = document.createElement("div");
+    item.className = "comment-item";
+
+    const text = document.createElement("div");
+    text.className = "comment-text";
+    text.textContent = comment.text;
+
+    const time = document.createElement("time");
+    time.className = "comment-time";
+    time.dateTime = comment.createdAt;
+    time.textContent = formatCompactRecordTime(comment.createdAt);
+
+    item.append(text, time);
+    panel.append(item);
+  }
+
+  return panel;
+}
+
 function renderRecords() {
   recordCount.textContent = `${records.length} 条`;
   recordsList.innerHTML = "";
@@ -150,7 +229,7 @@ function renderRecords() {
     const noteButton = document.createElement("button");
     noteButton.className = "record-tool-button note-button";
     noteButton.type = "button";
-    noteButton.textContent = "编辑备注";
+    noteButton.textContent = "评论";
 
     moreActions.append(moreButton, chainButton, noteButton);
 
@@ -181,7 +260,17 @@ function renderRecords() {
     content.innerHTML = record.contentHtml;
 
     card.prepend(toolbar);
-    card.append(content, time);
+    card.append(content);
+
+    if ((record.comments || []).length) {
+      card.append(createCommentsPanel(record));
+    }
+
+    if (openReplyChainId === record.id) {
+      card.append(createReplyChainPanel(record.id));
+    }
+
+    card.append(time);
     recordsList.append(card);
   }
 }
@@ -311,6 +400,53 @@ function startEdit(recordId) {
   setStatus("正在编辑一条记录", "working");
 }
 
+async function addComment(recordId) {
+  const record = records.find((currentRecord) => currentRecord.id === recordId);
+
+  if (!record) {
+    return;
+  }
+
+  const text = window.prompt("给这条记录添加评论");
+
+  if (!text?.trim()) {
+    return;
+  }
+
+  const nextRecord = {
+    ...record,
+    comments: [
+      ...(record.comments || []),
+      {
+        id: crypto.randomUUID(),
+        text: text.trim(),
+        createdAt: new Date().toISOString(),
+      },
+    ],
+  };
+  const nextRecords = addRecord(records, nextRecord);
+
+  try {
+    await saveCloudRecord(nextRecord, {
+      updateExisting: true,
+      requireComments: true,
+    });
+    records = nextRecords;
+    saveRecords(records);
+    renderRecords();
+    setStatus("评论已保存", "success");
+  } catch (error) {
+    setStatus(getSaveErrorMessage(error), "error");
+    console.error(error);
+  }
+}
+
+function toggleReplyChain(recordId) {
+  openReplyChainId = openReplyChainId === recordId ? null : recordId;
+  renderRecords();
+  setStatus(openReplyChainId ? "已展开回复链" : "已收起回复链", "success");
+}
+
 const autosaveDraft = debounce(() => {
   try {
     saveCurrentDraft();
@@ -323,6 +459,10 @@ const autosaveDraft = debounce(() => {
 function getSaveErrorMessage(error) {
   if (isStorageQuotaError(error)) {
     return "保存失败：内容太大";
+  }
+
+  if (error?.message) {
+    return `保存失败：${error.message}`;
   }
 
   return "保存失败";
@@ -376,7 +516,7 @@ async function archiveCurrentContent() {
 
   try {
     if (!hasLocalEmbeddedImage(contentHtml)) {
-      await saveCloudRecord(nextRecord);
+      await saveCloudRecord(nextRecord, { updateExisting: wasEditing });
     }
 
     saveRecords(nextRecords);
@@ -486,7 +626,8 @@ recordsList.addEventListener("click", (event) => {
   const chainButton = event.target.closest(".reply-chain-button");
 
   if (chainButton) {
-    setStatus("回复链入口已就绪", "working");
+    const card = chainButton.closest(".record-card");
+    toggleReplyChain(card.dataset.recordId);
     return;
   }
 
@@ -500,7 +641,8 @@ recordsList.addEventListener("click", (event) => {
   const noteButton = event.target.closest(".note-button");
 
   if (noteButton) {
-    setStatus("备注入口已就绪", "working");
+    const card = noteButton.closest(".record-card");
+    addComment(card.dataset.recordId);
     return;
   }
 

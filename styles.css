@@ -321,6 +321,42 @@ p {
   max-height: 220px;
 }
 
+.comments-panel,
+.reply-chain-panel {
+  margin-top: 12px;
+  padding: 10px;
+  border: 1px solid #e4dfd3;
+  border-radius: 6px;
+  background: rgba(249, 250, 251, 0.72);
+}
+
+.comment-item,
+.reply-chain-item {
+  display: grid;
+  gap: 4px;
+  padding: 8px 0;
+  border-bottom: 1px solid #ece8dd;
+}
+
+.comment-item:last-child,
+.reply-chain-item:last-child {
+  border-bottom: 0;
+}
+
+.comment-text,
+.reply-chain-summary {
+  color: #344054;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.comment-time,
+.reply-chain-time,
+.empty-comments {
+  color: #667085;
+  font-size: 12px;
+}
+
 .record-more-actions {
   display: flex;
   align-items: center;

@@ -7,7 +7,8 @@ create table if not exists public.entries (
   id text primary key,
   parent_id text references public.entries(id),
   content_html text not null,
-  created_at timestamptz not null default now()
+  created_at timestamptz not null default now(),
+  comments jsonb default '[]'::jsonb
 );
 
 alter table public.entries enable row level security;
@@ -20,6 +21,12 @@ using (true);
 create policy "Allow public insert entries"
 on public.entries
 for insert
+with check (true);
+
+create policy "Allow public update entries"
+on public.entries
+for update
+using (true)
 with check (true);
 ```
 
@@ -53,4 +60,15 @@ If your `entries` table already exists, run this once to enable replies:
 ```sql
 alter table public.entries
 add column if not exists parent_id text references public.entries(id);
+
+alter table public.entries
+add column if not exists comments jsonb default '[]'::jsonb;
+
+drop policy if exists "Allow public update entries" on public.entries;
+
+create policy "Allow public update entries"
+on public.entries
+for update
+using (true)
+with check (true);
 ```
