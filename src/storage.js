@@ -1,8 +1,8 @@
 const DRAFT_KEY = "personal-entry-draft";
 const LAST_SAVED_KEY = "personal-entry-last-saved";
 
-export function saveDraft(content) {
-  localStorage.setItem(DRAFT_KEY, content);
+export function saveDraft(html) {
+  localStorage.setItem(DRAFT_KEY, html);
   localStorage.setItem(LAST_SAVED_KEY, new Date().toISOString());
 }
 

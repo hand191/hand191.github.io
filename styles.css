@@ -53,17 +53,34 @@ p {
   padding: 20px;
   border: 1px solid #d6d3c8;
   border-radius: 8px;
-  resize: vertical;
+  overflow: auto;
   font-size: 18px;
   line-height: 1.7;
   background: #fffdf7;
   color: #1f2933;
   outline: none;
+  white-space: pre-wrap;
+  word-break: break-word;
 }
 
 .note-input:focus {
   border-color: #2563eb;
   box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12);
+}
+
+.note-input:empty::before {
+  content: attr(data-placeholder);
+  color: #98a2b3;
+  pointer-events: none;
+}
+
+.note-input img {
+  display: block;
+  max-width: 100%;
+  height: auto;
+  margin: 14px 0;
+  border: 1px solid #e4dfd3;
+  border-radius: 8px;
 }
 
 .meta {

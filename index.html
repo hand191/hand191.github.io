@@ -17,11 +17,14 @@
         <span id="saveStatus" class="status">已准备</span>
       </div>
 
-      <textarea
+      <div
         id="noteInput"
         class="note-input"
-        placeholder="在这里直接输入，不需要点击保存..."
-      ></textarea>
+        contenteditable="true"
+        role="textbox"
+        aria-multiline="true"
+        data-placeholder="在这里直接输入，或粘贴截图..."
+      ></div>
 
       <div class="meta">
         <span id="lastSaved">尚未保存</span>
