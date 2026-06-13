@@ -30,4 +30,19 @@ export const SUPABASE_URL = "https://your-project.supabase.co";
 export const SUPABASE_ANON_KEY = "your-anon-public-key";
 ```
 
-Phase 1 only syncs text records. Records with pasted screenshots remain local until Storage support is added.
+For image sync, create a public Storage bucket named:
+
+```text
+entry-images
+```
+
+Then run this SQL:
+
+```sql
+create policy "Allow public image uploads"
+on storage.objects
+for insert
+with check (bucket_id = 'entry-images');
+```
+
+The bucket should be public so pasted screenshots can be viewed from other devices through their public URLs.

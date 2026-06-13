@@ -1,13 +1,21 @@
-import { debounce } from "./autosave.js?v=20260613-4";
-import { createImageAttachment, preparePastedImage } from "./images.js?v=20260613-4";
-import { loadCloudRecords, saveCloudRecord } from "./cloudStorage.js?v=20260613-4";
+import { debounce } from "./autosave.js?v=20260613-5";
+import {
+  createImageAttachment,
+  imageBlobToDataUrl,
+  preparePastedImageBlob,
+} from "./images.js?v=20260613-5";
+import {
+  loadCloudRecords,
+  saveCloudRecord,
+  uploadCloudImage,
+} from "./cloudStorage.js?v=20260613-5";
 import {
   addRecord,
   createRecord,
   hasEmbeddedImage,
   isBlankHtml,
   mergeRecords,
-} from "./notes.js?v=20260613-4";
+} from "./notes.js?v=20260613-5";
 import {
   clearDraft,
   isStorageQuotaError,
@@ -17,7 +25,7 @@ import {
   loadRecords,
   saveDraft,
   saveRecords,
-} from "./storage.js?v=20260613-4";
+} from "./storage.js?v=20260613-5";
 
 const noteInput = document.querySelector("#noteInput");
 const saveStatus = document.querySelector("#saveStatus");
@@ -123,6 +131,23 @@ function getPastedImageFiles(event) {
     .filter(Boolean);
 }
 
+async function prepareImageSource(imageFile) {
+  const imageBlob = await preparePastedImageBlob(imageFile);
+
+  try {
+    const publicUrl = await uploadCloudImage(imageBlob, loadOrCreateDraftId());
+
+    if (publicUrl) {
+      return publicUrl;
+    }
+  } catch (error) {
+    saveStatus.textContent = "图片云同步失败，已本机保存";
+    console.error(error);
+  }
+
+  return imageBlobToDataUrl(imageBlob);
+}
+
 function toggleImageAttachment(button) {
   const attachment = button.closest(".image-attachment");
   const image = attachment.querySelector(".image-preview");
@@ -224,8 +249,8 @@ noteInput.addEventListener("paste", async (event) => {
 
   try {
     for (const imageFile of images) {
-      const imageDataUrl = await preparePastedImage(imageFile);
-      insertNodeAtCursor(createImageAttachment(imageDataUrl));
+      const imageSource = await prepareImageSource(imageFile);
+      insertNodeAtCursor(createImageAttachment(imageSource));
       insertNodeAtCursor(document.createElement("br"));
     }
 

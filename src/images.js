@@ -19,7 +19,7 @@ function readFileAsDataUrl(file) {
   });
 }
 
-export async function preparePastedImage(file) {
+export async function preparePastedImageBlob(file) {
   const originalDataUrl = await readFileAsDataUrl(file);
   const image = await loadImage(originalDataUrl);
   const scale = Math.min(1, MAX_IMAGE_WIDTH / image.width);
@@ -33,7 +33,29 @@ export async function preparePastedImage(file) {
   const context = canvas.getContext("2d");
   context.drawImage(image, 0, 0, width, height);
 
-  return canvas.toDataURL("image/jpeg", IMAGE_QUALITY);
+  return new Promise((resolve, reject) => {
+    canvas.toBlob(
+      (blob) => {
+        if (!blob) {
+          reject(new Error("Failed to prepare pasted image."));
+          return;
+        }
+
+        resolve(blob);
+      },
+      "image/jpeg",
+      IMAGE_QUALITY
+    );
+  });
+}
+
+export function imageBlobToDataUrl(blob) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result);
+    reader.onerror = reject;
+    reader.readAsDataURL(blob);
+  });
 }
 
 function formatAttachmentTitle() {

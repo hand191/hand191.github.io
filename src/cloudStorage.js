@@ -1,9 +1,10 @@
 import {
+  CLOUD_IMAGES_BUCKET,
   CLOUD_RECORDS_TABLE,
   SUPABASE_ANON_KEY,
   SUPABASE_URL,
   isCloudConfigured,
-} from "./supabaseConfig.js?v=20260613-4";
+} from "./supabaseConfig.js?v=20260613-5";
 
 let supabaseClient;
 
@@ -77,4 +78,34 @@ export async function saveCloudRecord(record) {
   }
 
   return record;
+}
+
+export async function uploadCloudImage(fileBlob, draftId) {
+  const client = await getSupabaseClient();
+
+  if (!client) {
+    return null;
+  }
+
+  const path = `${draftId}/${Date.now()}-${Math.random()
+    .toString(16)
+    .slice(2)}.jpg`;
+
+  const { error } = await client.storage
+    .from(CLOUD_IMAGES_BUCKET)
+    .upload(path, fileBlob, {
+      cacheControl: "31536000",
+      contentType: "image/jpeg",
+      upsert: false,
+    });
+
+  if (error) {
+    throw error;
+  }
+
+  const { data } = client.storage
+    .from(CLOUD_IMAGES_BUCKET)
+    .getPublicUrl(path);
+
+  return data.publicUrl;
 }
