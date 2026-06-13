@@ -8,11 +8,13 @@ export function isBlankHtml(html) {
   return !hasImage && !text;
 }
 
-export function hasEmbeddedImage(html) {
+export function hasLocalEmbeddedImage(html) {
   const template = document.createElement("template");
   template.innerHTML = html;
 
-  return Boolean(template.content.querySelector("img"));
+  return [...template.content.querySelectorAll("img")].some((image) => {
+    return image.src.startsWith("data:");
+  });
 }
 
 export function createRecord(contentHtml, id) {

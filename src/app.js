@@ -1,21 +1,21 @@
-import { debounce } from "./autosave.js?v=20260613-5";
+import { debounce } from "./autosave.js?v=20260613-6";
 import {
   createImageAttachment,
   imageBlobToDataUrl,
   preparePastedImageBlob,
-} from "./images.js?v=20260613-5";
+} from "./images.js?v=20260613-6";
 import {
   loadCloudRecords,
   saveCloudRecord,
   uploadCloudImage,
-} from "./cloudStorage.js?v=20260613-5";
+} from "./cloudStorage.js?v=20260613-6";
 import {
   addRecord,
   createRecord,
-  hasEmbeddedImage,
+  hasLocalEmbeddedImage,
   isBlankHtml,
   mergeRecords,
-} from "./notes.js?v=20260613-5";
+} from "./notes.js?v=20260613-6";
 import {
   clearDraft,
   isStorageQuotaError,
@@ -25,7 +25,7 @@ import {
   loadRecords,
   saveDraft,
   saveRecords,
-} from "./storage.js?v=20260613-5";
+} from "./storage.js?v=20260613-6";
 
 const noteInput = document.querySelector("#noteInput");
 const saveStatus = document.querySelector("#saveStatus");
@@ -203,7 +203,7 @@ async function archiveCurrentContent() {
   const nextRecord = nextRecords[0];
 
   try {
-    if (!hasEmbeddedImage(contentHtml)) {
+    if (!hasLocalEmbeddedImage(contentHtml)) {
       await saveCloudRecord(nextRecord);
     }
 
