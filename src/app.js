@@ -1,10 +1,22 @@
 import { debounce } from "./autosave.js";
 import { createImageAttachment, preparePastedImage } from "./images.js";
-import { loadDraft, loadLastSavedAt, saveDraft } from "./storage.js";
+import { addRecord, createRecord, isBlankHtml } from "./notes.js";
+import {
+  clearDraft,
+  loadDraft,
+  loadLastSavedAt,
+  loadRecords,
+  saveDraft,
+  saveRecords,
+} from "./storage.js";
 
 const noteInput = document.querySelector("#noteInput");
 const saveStatus = document.querySelector("#saveStatus");
 const lastSaved = document.querySelector("#lastSaved");
+const archiveButton = document.querySelector("#archiveButton");
+const recordCount = document.querySelector("#recordCount");
+const recordsList = document.querySelector("#recordsList");
+let records = loadRecords();
 
 function formatSavedTime(value) {
   if (!value) {
@@ -23,10 +35,51 @@ function renderLastSavedTime() {
   lastSaved.textContent = formatSavedTime(loadLastSavedAt());
 }
 
+function formatRecordTime(value) {
+  return new Date(value).toLocaleString("zh-CN", {
+    dateStyle: "medium",
+    timeStyle: "short",
+  });
+}
+
+function renderRecords() {
+  recordCount.textContent = `${records.length} 条`;
+  recordsList.innerHTML = "";
+
+  if (!records.length) {
+    const emptyState = document.createElement("div");
+    emptyState.className = "empty-records";
+    emptyState.textContent = "还没有归档记录";
+    recordsList.append(emptyState);
+    return;
+  }
+
+  for (const record of records) {
+    const card = document.createElement("article");
+    card.className = "record-card";
+
+    const time = document.createElement("time");
+    time.dateTime = record.createdAt;
+    time.textContent = formatRecordTime(record.createdAt);
+
+    const content = document.createElement("div");
+    content.className = "record-content";
+    content.innerHTML = record.contentHtml;
+
+    card.append(time, content);
+    recordsList.append(card);
+  }
+}
+
+function updateArchiveButton() {
+  archiveButton.disabled = isBlankHtml(noteInput.innerHTML);
+}
+
 function saveCurrentDraft() {
   saveDraft(noteInput.innerHTML);
   saveStatus.textContent = "已自动保存";
   renderLastSavedTime();
+  updateArchiveButton();
 }
 
 function moveCursorAfter(node) {
@@ -73,9 +126,12 @@ const autosaveDraft = debounce(() => {
 
 noteInput.innerHTML = loadDraft();
 renderLastSavedTime();
+renderRecords();
+updateArchiveButton();
 
 noteInput.addEventListener("input", () => {
   saveStatus.textContent = "正在输入...";
+  updateArchiveButton();
   autosaveDraft();
 });
 
@@ -113,4 +169,32 @@ noteInput.addEventListener("click", (event) => {
   }
 
   toggleImageAttachment(toggleButton);
+});
+
+recordsList.addEventListener("click", (event) => {
+  const toggleButton = event.target.closest(".image-toggle");
+
+  if (!toggleButton) {
+    return;
+  }
+
+  toggleImageAttachment(toggleButton);
+});
+
+archiveButton.addEventListener("click", () => {
+  const contentHtml = noteInput.innerHTML;
+
+  if (isBlankHtml(contentHtml)) {
+    return;
+  }
+
+  records = addRecord(records, createRecord(contentHtml));
+  saveRecords(records);
+  clearDraft();
+
+  noteInput.innerHTML = "";
+  saveStatus.textContent = "已归档";
+  renderLastSavedTime();
+  renderRecords();
+  updateArchiveButton();
 });
