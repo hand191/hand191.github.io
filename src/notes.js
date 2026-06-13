@@ -10,7 +10,7 @@ export function isBlankHtml(html) {
 
 export function createRecord(contentHtml) {
   return {
-    id: crypto.randomUUID(),
+    id: createId(),
     contentHtml,
     createdAt: new Date().toISOString(),
   };
@@ -18,4 +18,12 @@ export function createRecord(contentHtml) {
 
 export function addRecord(records, record) {
   return [record, ...records];
+}
+
+function createId() {
+  if (crypto.randomUUID) {
+    return crypto.randomUUID();
+  }
+
+  return `${Date.now()}-${Math.random().toString(16).slice(2)}`;
 }

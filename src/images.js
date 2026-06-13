@@ -1,5 +1,5 @@
-const MAX_IMAGE_WIDTH = 1400;
-const IMAGE_QUALITY = 0.82;
+const MAX_IMAGE_WIDTH = 900;
+const IMAGE_QUALITY = 0.68;
 
 function loadImage(dataUrl) {
   return new Promise((resolve, reject) => {

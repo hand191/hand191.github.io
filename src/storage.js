@@ -2,6 +2,14 @@ const DRAFT_KEY = "personal-entry-draft";
 const LAST_SAVED_KEY = "personal-entry-last-saved";
 const RECORDS_KEY = "personal-entry-records";
 
+export function isStorageQuotaError(error) {
+  return (
+    error instanceof DOMException &&
+    (error.name === "QuotaExceededError" ||
+      error.name === "NS_ERROR_DOM_QUOTA_REACHED")
+  );
+}
+
 export function saveDraft(html) {
   localStorage.setItem(DRAFT_KEY, html);
   localStorage.setItem(LAST_SAVED_KEY, new Date().toISOString());

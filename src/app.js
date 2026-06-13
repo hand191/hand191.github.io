@@ -3,6 +3,7 @@ import { createImageAttachment, preparePastedImage } from "./images.js";
 import { addRecord, createRecord, isBlankHtml } from "./notes.js";
 import {
   clearDraft,
+  isStorageQuotaError,
   loadDraft,
   loadLastSavedAt,
   loadRecords,
@@ -121,8 +122,21 @@ function toggleImageAttachment(button) {
 }
 
 const autosaveDraft = debounce(() => {
-  saveCurrentDraft();
+  try {
+    saveCurrentDraft();
+  } catch (error) {
+    saveStatus.textContent = getSaveErrorMessage(error);
+    console.error(error);
+  }
 }, 600);
+
+function getSaveErrorMessage(error) {
+  if (isStorageQuotaError(error)) {
+    return "保存失败：内容太大";
+  }
+
+  return "保存失败";
+}
 
 noteInput.innerHTML = loadDraft();
 renderLastSavedTime();
@@ -188,10 +202,18 @@ archiveButton.addEventListener("click", () => {
     return;
   }
 
-  records = addRecord(records, createRecord(contentHtml));
-  saveRecords(records);
-  clearDraft();
+  const nextRecords = addRecord(records, createRecord(contentHtml));
 
+  try {
+    saveRecords(nextRecords);
+    clearDraft();
+  } catch (error) {
+    saveStatus.textContent = getSaveErrorMessage(error);
+    console.error(error);
+    return;
+  }
+
+  records = nextRecords;
   noteInput.innerHTML = "";
   saveStatus.textContent = "已归档";
   renderLastSavedTime();
