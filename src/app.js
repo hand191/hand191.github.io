@@ -1,14 +1,20 @@
-import { debounce } from "./autosave.js?v=20260613-21";
+import { debounce } from "./autosave.js?v=20260613-22";
+import {
+  AUTHORS,
+  getAuthor,
+  getRecordAuthorColor,
+} from "./authors.js?v=20260613-22";
 import {
   createImageAttachment,
   imageBlobToDataUrl,
   preparePastedImageBlob,
-} from "./images.js?v=20260613-21";
+} from "./images.js?v=20260613-22";
 import {
   loadCloudRecords,
+  saveCloudComment,
   saveCloudRecord,
   uploadCloudImage,
-} from "./cloudStorage.js?v=20260613-21";
+} from "./cloudStorage.js?v=20260613-22";
 import {
   addRecord,
   cleanRecordHtml,
@@ -16,7 +22,7 @@ import {
   hasLocalEmbeddedImage,
   isBlankHtml,
   mergeRecords,
-} from "./notes.js?v=20260613-21";
+} from "./notes.js?v=20260613-22";
 import {
   clearDraft,
   clearRecords,
@@ -29,7 +35,7 @@ import {
   saveDraft,
   saveRecords,
   saveSelectedAuthor,
-} from "./storage.js?v=20260613-21";
+} from "./storage.js?v=20260613-22";
 
 const noteInput = document.querySelector("#noteInput");
 const saveStatus = document.querySelector("#saveStatus");
@@ -50,19 +56,6 @@ let editingRecordId = null;
 let openReplyChainId = null;
 let openCommentFormId = null;
 let selectedAuthorId = loadSelectedAuthor();
-
-const AUTHORS = {
-  yingjun: {
-    id: "yingjun",
-    label: "英俊",
-    color: "blue",
-  },
-  hongxia: {
-    id: "hongxia",
-    label: "红霞",
-    color: "red",
-  },
-};
 
 function setStatus(message, tone = "neutral") {
   saveStatus.textContent = message;
@@ -134,13 +127,7 @@ function createClientId() {
 }
 
 function getSelectedAuthor() {
-  const legacyAuthorIds = {
-    me: "yingjun",
-    wife: "hongxia",
-  };
-  const normalizedAuthorId = legacyAuthorIds[selectedAuthorId] || selectedAuthorId;
-
-  return AUTHORS[normalizedAuthorId] || AUTHORS.yingjun;
+  return getAuthor(selectedAuthorId);
 }
 
 function renderRoleSwitch() {
@@ -158,56 +145,6 @@ function selectAuthor(authorId) {
   saveSelectedAuthor(selectedAuthorId);
   renderRoleSwitch();
   setStatus(`当前用户：${getSelectedAuthor().label}`, "success");
-}
-
-function getAuthorBorderColor(record) {
-  const value = record.authorColor || record.authorId;
-
-  if (!value) {
-    return null;
-  }
-
-  const color = value.trim().toLowerCase();
-  const namedColors = {
-    blue: "#2563eb",
-    red: "#ef4444",
-    wife: "#ef4444",
-    me: "#2563eb",
-    hongxia: "#ef4444",
-    yingjun: "#2563eb",
-    w: "#ef4444",
-    m: "#2563eb",
-    laopo: "#ef4444",
-    husband: "#2563eb",
-    "老婆": "#ef4444",
-    "我": "#2563eb",
-    "红霞": "#ef4444",
-    "英俊": "#2563eb",
-    "红": "#ef4444",
-    "红色": "#ef4444",
-    "蓝": "#2563eb",
-    "蓝色": "#2563eb",
-  };
-
-  if (namedColors[color]) {
-    return namedColors[color];
-  }
-
-  if (/^#[0-9a-f]{3}([0-9a-f]{3})?$/i.test(color)) {
-    return color;
-  }
-
-  return null;
-}
-
-function getAuthorLabel(authorId) {
-  const legacyAuthorIds = {
-    me: "yingjun",
-    wife: "hongxia",
-  };
-  const normalizedAuthorId = legacyAuthorIds[authorId] || authorId;
-
-  return AUTHORS[normalizedAuthorId]?.label || "";
 }
 
 function buildReplyChain(recordId) {
@@ -271,7 +208,7 @@ function createCommentsPanel(record) {
   for (const comment of comments) {
     const item = document.createElement("div");
     item.className = "comment-item";
-    const commentColor = getAuthorBorderColor({
+    const commentColor = getRecordAuthorColor({
       authorId: comment.authorId,
       authorColor: comment.authorColor,
     });
@@ -285,16 +222,12 @@ function createCommentsPanel(record) {
     text.className = "comment-text";
     text.textContent = comment.text;
 
-    const meta = document.createElement("span");
-    meta.className = "comment-meta";
-    meta.textContent = getAuthorLabel(comment.authorId);
-
     const time = document.createElement("time");
     time.className = "comment-time";
     time.dateTime = comment.createdAt;
     time.textContent = formatCompactRecordTime(comment.createdAt);
 
-    item.append(text, meta, time);
+    item.append(text, time);
     panel.append(item);
   }
 
@@ -348,7 +281,7 @@ function renderRecords() {
     card.className = "record-card";
     card.dataset.recordId = record.id;
 
-    const authorBorderColor = getAuthorBorderColor(record);
+    const authorBorderColor = getRecordAuthorColor(record);
 
     if (authorBorderColor) {
       card.classList.add("record-card-with-author");
@@ -573,26 +506,26 @@ async function addComment(recordId) {
     return;
   }
 
+  const selectedAuthor = getSelectedAuthor();
+  const nextComment = {
+    id: createClientId(),
+    entryId: record.id,
+    text: text.trim(),
+    createdAt: new Date().toISOString(),
+    authorId: selectedAuthor.id,
+    authorColor: selectedAuthor.color,
+  };
   const nextRecord = {
     ...record,
     comments: [
       ...(record.comments || []),
-      {
-        id: createClientId(),
-        text: text.trim(),
-        createdAt: new Date().toISOString(),
-        authorId: getSelectedAuthor().id,
-        authorColor: getSelectedAuthor().color,
-      },
+      nextComment,
     ],
   };
   const nextRecords = addRecord(records, nextRecord);
 
   try {
-    await saveCloudRecord(nextRecord, {
-      updateExisting: true,
-      requireComments: true,
-    });
+    await saveCloudComment(nextComment);
     records = nextRecords;
     openCommentFormId = null;
     saveRecords(records);
@@ -634,8 +567,8 @@ function getSaveErrorMessage(error) {
     return "保存失败：内容太大";
   }
 
-  if (error?.message?.includes("comments")) {
-    return "保存失败：数据库缺少 comments 列";
+  if (error?.message?.includes("entry_comments")) {
+    return "保存失败：数据库缺少 entry_comments 表";
   }
 
   if (error?.message) {

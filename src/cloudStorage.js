@@ -1,10 +1,11 @@
 import {
+  CLOUD_COMMENTS_TABLE,
   CLOUD_IMAGES_BUCKET,
   CLOUD_RECORDS_TABLE,
   SUPABASE_ANON_KEY,
   SUPABASE_URL,
   isCloudConfigured,
-} from "./supabaseConfig.js?v=20260613-5";
+} from "./supabaseConfig.js?v=20260613-22";
 
 let supabaseClient;
 
@@ -32,10 +33,6 @@ function toDatabaseRecord(record, options = {}) {
     created_at: record.createdAt,
   };
 
-  if (options.includeComments !== false) {
-    databaseRecord.comments = record.comments || [];
-  }
-
   if (options.includeAuthor !== false) {
     databaseRecord.author_id = record.authorId || null;
     databaseRecord.author_color = record.authorColor || null;
@@ -50,10 +47,64 @@ function fromDatabaseRecord(row) {
     parentId: row.parent_id,
     contentHtml: row.content_html,
     createdAt: row.created_at,
-    comments: row.comments || [],
+    comments: [],
     authorId: row.author_id || null,
     authorColor: row.author_color || null,
   };
+}
+
+function toDatabaseComment(comment) {
+  return {
+    id: comment.id,
+    entry_id: comment.entryId,
+    text: comment.text,
+    created_at: comment.createdAt,
+    author_id: comment.authorId || null,
+    author_color: comment.authorColor || null,
+  };
+}
+
+function fromDatabaseComment(row) {
+  return {
+    id: row.id,
+    entryId: row.entry_id,
+    text: row.text,
+    createdAt: row.created_at,
+    authorId: row.author_id || null,
+    authorColor: row.author_color || null,
+  };
+}
+
+function attachComments(records, comments) {
+  const commentsByRecordId = new Map();
+
+  for (const comment of comments) {
+    const recordComments = commentsByRecordId.get(comment.entryId) || [];
+    recordComments.push(comment);
+    commentsByRecordId.set(comment.entryId, recordComments);
+  }
+
+  return records.map((record) => ({
+    ...record,
+    comments: commentsByRecordId.get(record.id) || [],
+  }));
+}
+
+async function loadCloudComments(client) {
+  const { data, error } = await client
+    .from(CLOUD_COMMENTS_TABLE)
+    .select("id, entry_id, text, created_at, author_id, author_color")
+    .order("created_at", { ascending: true });
+
+  if (error?.message?.includes(CLOUD_COMMENTS_TABLE)) {
+    return [];
+  }
+
+  if (error) {
+    throw error;
+  }
+
+  return data.map(fromDatabaseComment);
 }
 
 export async function loadCloudRecords() {
@@ -71,21 +122,12 @@ export async function loadCloudRecords() {
   };
 
   let { data, error } = await selectRecords(
-    "id, parent_id, content_html, created_at, comments, author_id, author_color"
+    "id, parent_id, content_html, created_at, author_id, author_color"
   );
 
   if (error?.message?.includes("author_")) {
     const fallback = await selectRecords(
-      "id, parent_id, content_html, created_at, comments"
-    );
-
-    data = fallback.data;
-    error = fallback.error;
-  }
-
-  if (error?.message?.includes("comments")) {
-    const fallback = await selectRecords(
-      "id, parent_id, content_html, created_at, author_id, author_color"
+      "id, parent_id, content_html, created_at"
     );
 
     data = fallback.data;
@@ -96,7 +138,10 @@ export async function loadCloudRecords() {
     throw error;
   }
 
-  return data.map(fromDatabaseRecord);
+  const records = data.map(fromDatabaseRecord);
+  const comments = await loadCloudComments(client);
+
+  return attachComments(records, comments);
 }
 
 export async function saveCloudRecord(record, options = {}) {
@@ -135,20 +180,29 @@ export async function saveCloudRecord(record, options = {}) {
     error = fallback.error;
   }
 
-  if (error?.message?.includes("comments") && !options.requireComments) {
-    writeOptions = {
-      ...writeOptions,
-      includeComments: false,
-    };
-    const fallback = await writeRecord(writeOptions);
-    error = fallback.error;
-  }
-
   if (error) {
     throw error;
   }
 
   return record;
+}
+
+export async function saveCloudComment(comment) {
+  const client = await getSupabaseClient();
+
+  if (!client) {
+    return null;
+  }
+
+  const { error } = await client
+    .from(CLOUD_COMMENTS_TABLE)
+    .insert(toDatabaseComment(comment));
+
+  if (error) {
+    throw error;
+  }
+
+  return comment;
 }
 
 export async function uploadCloudImage(fileBlob, draftId) {

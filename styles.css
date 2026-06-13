@@ -418,11 +418,6 @@ p {
   border-left-color: var(--comment-author-color);
 }
 
-.comment-item-with-author .comment-meta {
-  color: var(--comment-author-color);
-  opacity: 0.72;
-}
-
 .comment-text,
 .reply-chain-summary {
   color: #667085;
@@ -430,17 +425,12 @@ p {
   line-height: 1.35;
 }
 
-.comment-meta,
 .comment-time,
 .reply-chain-time,
 .empty-comments {
   color: #98a2b3;
   font-size: 10px;
   line-height: 1;
-}
-
-.comment-meta {
-  margin-left: 6px;
 }
 
 .comment-time {
