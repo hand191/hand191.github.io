@@ -1,6 +1,6 @@
-import { debounce } from "./autosave.js?v=20260613-1";
-import { createImageAttachment, preparePastedImage } from "./images.js?v=20260613-1";
-import { addRecord, createRecord, isBlankHtml } from "./notes.js?v=20260613-1";
+import { debounce } from "./autosave.js?v=20260613-2";
+import { createImageAttachment, preparePastedImage } from "./images.js?v=20260613-2";
+import { addRecord, createRecord, isBlankHtml } from "./notes.js?v=20260613-2";
 import {
   clearDraft,
   isStorageQuotaError,
@@ -9,7 +9,7 @@ import {
   loadRecords,
   saveDraft,
   saveRecords,
-} from "./storage.js?v=20260613-1";
+} from "./storage.js?v=20260613-2";
 
 const noteInput = document.querySelector("#noteInput");
 const saveStatus = document.querySelector("#saveStatus");
@@ -138,6 +138,32 @@ function getSaveErrorMessage(error) {
   return "保存失败";
 }
 
+function archiveCurrentContent() {
+  const contentHtml = noteInput.innerHTML;
+
+  if (isBlankHtml(contentHtml)) {
+    return;
+  }
+
+  const nextRecords = addRecord(records, createRecord(contentHtml));
+
+  try {
+    saveRecords(nextRecords);
+    clearDraft();
+  } catch (error) {
+    saveStatus.textContent = getSaveErrorMessage(error);
+    console.error(error);
+    return;
+  }
+
+  records = nextRecords;
+  noteInput.innerHTML = "";
+  saveStatus.textContent = "已归档";
+  renderLastSavedTime();
+  renderRecords();
+  updateArchiveButton();
+}
+
 noteInput.innerHTML = loadDraft();
 renderLastSavedTime();
 renderRecords();
@@ -185,6 +211,15 @@ noteInput.addEventListener("click", (event) => {
   toggleImageAttachment(toggleButton);
 });
 
+noteInput.addEventListener("keydown", (event) => {
+  if (!(event.metaKey && event.key === "Enter")) {
+    return;
+  }
+
+  event.preventDefault();
+  archiveCurrentContent();
+});
+
 recordsList.addEventListener("click", (event) => {
   const toggleButton = event.target.closest(".image-toggle");
 
@@ -195,28 +230,4 @@ recordsList.addEventListener("click", (event) => {
   toggleImageAttachment(toggleButton);
 });
 
-archiveButton.addEventListener("click", () => {
-  const contentHtml = noteInput.innerHTML;
-
-  if (isBlankHtml(contentHtml)) {
-    return;
-  }
-
-  const nextRecords = addRecord(records, createRecord(contentHtml));
-
-  try {
-    saveRecords(nextRecords);
-    clearDraft();
-  } catch (error) {
-    saveStatus.textContent = getSaveErrorMessage(error);
-    console.error(error);
-    return;
-  }
-
-  records = nextRecords;
-  noteInput.innerHTML = "";
-  saveStatus.textContent = "已归档";
-  renderLastSavedTime();
-  renderRecords();
-  updateArchiveButton();
-});
+archiveButton.addEventListener("click", archiveCurrentContent);

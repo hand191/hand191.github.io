@@ -227,11 +227,21 @@ p {
 
 @media (max-width: 640px) {
   .app {
-    padding: 20px;
+    padding: 16px;
   }
 
   .topbar {
     display: block;
+    margin-bottom: 16px;
+  }
+
+  h1 {
+    font-size: 24px;
+  }
+
+  p {
+    font-size: 14px;
+    line-height: 1.5;
   }
 
   .status {
@@ -240,7 +250,8 @@ p {
   }
 
   .note-input {
-    min-height: 420px;
+    min-height: 360px;
+    padding: 16px;
     font-size: 16px;
   }
 
@@ -250,7 +261,15 @@ p {
     flex-direction: column;
   }
 
+  .meta {
+    gap: 10px;
+  }
+
   .archive-button {
     width: 100%;
+    min-height: 48px;
+    padding: 12px 16px;
+    font-size: 16px;
+    font-weight: 600;
   }
 }
