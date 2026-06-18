@@ -371,6 +371,42 @@ p {
   box-shadow: inset -5px 0 0 rgba(31, 41, 55, 0.08);
 }
 
+.record-card-todo {
+  padding-left: 34px;
+}
+
+.record-card-todo-done .record-content {
+  color: #98a2b3;
+  text-decoration: line-through;
+  text-decoration-thickness: 1px;
+}
+
+.todo-toggle {
+  align-items: center;
+  background: #ffffff;
+  border: 1px solid #98a2b3;
+  border-radius: 5px;
+  color: #166534;
+  cursor: pointer;
+  display: flex;
+  font: inherit;
+  font-size: 14px;
+  font-weight: 700;
+  height: 20px;
+  justify-content: center;
+  left: 10px;
+  line-height: 1;
+  padding: 0;
+  position: absolute;
+  top: 36px;
+  width: 20px;
+}
+
+.todo-toggle[aria-pressed="true"] {
+  background: #e7f5ec;
+  border-color: #16a34a;
+}
+
 .record-toolbar {
   display: grid;
   grid-template-columns: 1fr auto;
@@ -566,6 +602,15 @@ p {
   background: #f2f4f7;
 }
 
+.todo-button {
+  border-color: #c7d2fe;
+  color: #1d4ed8;
+}
+
+.record-card-todo .todo-button {
+  background: #eff6ff;
+}
+
 @media (max-width: 640px) {
   .app {
     padding: 10px;
@@ -645,6 +690,15 @@ p {
   .record-card {
     --dialog-offset: 24px;
     padding: 5px 7px 13px;
+  }
+
+  .record-card-todo {
+    padding-left: 31px;
+  }
+
+  .todo-toggle {
+    left: 8px;
+    top: 36px;
   }
 
   .record-toolbar {

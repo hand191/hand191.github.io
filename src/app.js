@@ -1,20 +1,20 @@
-import { debounce } from "./autosave.js?v=20260613-26";
+import { debounce } from "./autosave.js?v=20260618-1";
 import {
   AUTHORS,
   getAuthor,
   getRecordAuthorColor,
-} from "./authors.js?v=20260613-26";
+} from "./authors.js?v=20260618-1";
 import {
   createImageAttachment,
   imageBlobToDataUrl,
   preparePastedImageBlob,
-} from "./images.js?v=20260613-26";
+} from "./images.js?v=20260618-1";
 import {
   loadCloudRecords,
   saveCloudComment,
   saveCloudRecord,
   uploadCloudImage,
-} from "./cloudStorage.js?v=20260613-26";
+} from "./cloudStorage.js?v=20260618-1";
 import {
   addRecord,
   cleanRecordHtml,
@@ -22,7 +22,7 @@ import {
   hasLocalEmbeddedImage,
   isBlankHtml,
   mergeRecords,
-} from "./notes.js?v=20260613-26";
+} from "./notes.js?v=20260618-1";
 import {
   clearDraft,
   clearRecords,
@@ -35,7 +35,7 @@ import {
   saveDraft,
   saveRecords,
   saveSelectedAuthor,
-} from "./storage.js?v=20260613-26";
+} from "./storage.js?v=20260618-1";
 
 const noteInput = document.querySelector("#noteInput");
 const saveStatus = document.querySelector("#saveStatus");
@@ -325,7 +325,12 @@ function renderRecords() {
     noteButton.type = "button";
     noteButton.textContent = "评论";
 
-    moreActions.append(moreButton, chainButton, noteButton);
+    const todoButton = document.createElement("button");
+    todoButton.className = "record-tool-button todo-button";
+    todoButton.type = "button";
+    todoButton.textContent = record.isTodo ? "待办中" : "待办";
+
+    moreActions.append(moreButton, chainButton, noteButton, todoButton);
 
     const actions = document.createElement("div");
     actions.className = "record-actions";
@@ -352,6 +357,21 @@ function renderRecords() {
     const content = document.createElement("div");
     content.className = "record-content";
     content.innerHTML = record.contentHtml;
+
+    if (record.isTodo) {
+      card.classList.add("record-card-todo");
+
+      if (record.todoDone) {
+        card.classList.add("record-card-todo-done");
+      }
+
+      const todoToggle = document.createElement("button");
+      todoToggle.className = "todo-toggle";
+      todoToggle.type = "button";
+      todoToggle.setAttribute("aria-pressed", String(Boolean(record.todoDone)));
+      todoToggle.textContent = record.todoDone ? "✓" : "";
+      card.append(todoToggle);
+    }
 
     card.prepend(toolbar);
     card.append(content);
@@ -543,6 +563,54 @@ async function addComment(recordId) {
   }
 }
 
+async function updateRecordTodo(recordId, nextTodoState) {
+  const record = records.find((currentRecord) => currentRecord.id === recordId);
+
+  if (!record) {
+    return;
+  }
+
+  const nextRecord = {
+    ...record,
+    ...nextTodoState,
+  };
+  const nextRecords = addRecord(records, nextRecord);
+
+  try {
+    await saveCloudRecord(nextRecord, {
+      updateExisting: true,
+      requireTodo: true,
+    });
+    records = nextRecords;
+    saveRecords(records);
+    renderRecords();
+    setStatus(nextRecord.todoDone ? "待办已完成" : "待办已更新", "success");
+  } catch (error) {
+    setStatus(getSaveErrorMessage(error), "error");
+    console.error(error);
+  }
+}
+
+function markRecordAsTodo(recordId) {
+  updateRecordTodo(recordId, {
+    isTodo: true,
+    todoDone: false,
+  });
+}
+
+function toggleTodoDone(recordId) {
+  const record = records.find((currentRecord) => currentRecord.id === recordId);
+
+  if (!record) {
+    return;
+  }
+
+  updateRecordTodo(recordId, {
+    isTodo: true,
+    todoDone: !record.todoDone,
+  });
+}
+
 function toggleCommentForm(recordId) {
   openCommentFormId = openCommentFormId === recordId ? null : recordId;
   renderRecords();
@@ -575,6 +643,10 @@ function getSaveErrorMessage(error) {
 
   if (error?.message?.includes("entry_comments")) {
     return "保存失败：数据库缺少 entry_comments 表";
+  }
+
+  if (error?.message?.includes("todo")) {
+    return "保存失败：数据库缺少待办字段";
   }
 
   if (error?.message) {
@@ -813,6 +885,22 @@ recordsList.addEventListener("click", (event) => {
   if (noteButton) {
     const card = noteButton.closest(".record-card");
     toggleCommentForm(card.dataset.recordId);
+    return;
+  }
+
+  const todoButton = event.target.closest(".todo-button");
+
+  if (todoButton) {
+    const card = todoButton.closest(".record-card");
+    markRecordAsTodo(card.dataset.recordId);
+    return;
+  }
+
+  const todoToggle = event.target.closest(".todo-toggle");
+
+  if (todoToggle) {
+    const card = todoToggle.closest(".record-card");
+    toggleTodoDone(card.dataset.recordId);
     return;
   }
 

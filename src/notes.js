@@ -37,6 +37,8 @@ export function createRecord(contentHtml, id, parentId = null) {
     comments: [],
     authorId: null,
     authorColor: null,
+    isTodo: false,
+    todoDone: false,
   };
 }
 

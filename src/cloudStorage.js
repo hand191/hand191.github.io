@@ -33,6 +33,11 @@ function toDatabaseRecord(record, options = {}) {
     created_at: record.createdAt,
   };
 
+  if (options.includeTodo !== false) {
+    databaseRecord.is_todo = Boolean(record.isTodo);
+    databaseRecord.todo_done = Boolean(record.todoDone);
+  }
+
   if (options.includeAuthor !== false) {
     databaseRecord.author_id = record.authorId || null;
     databaseRecord.author_color = record.authorColor || null;
@@ -50,6 +55,8 @@ function fromDatabaseRecord(row) {
     comments: [],
     authorId: row.author_id || null,
     authorColor: row.author_color || null,
+    isTodo: Boolean(row.is_todo),
+    todoDone: Boolean(row.todo_done),
   };
 }
 
@@ -122,8 +129,17 @@ export async function loadCloudRecords() {
   };
 
   let { data, error } = await selectRecords(
-    "id, parent_id, content_html, created_at, author_id, author_color"
+    "id, parent_id, content_html, created_at, author_id, author_color, is_todo, todo_done"
   );
+
+  if (error?.message?.includes("todo")) {
+    const fallback = await selectRecords(
+      "id, parent_id, content_html, created_at, author_id, author_color"
+    );
+
+    data = fallback.data;
+    error = fallback.error;
+  }
 
   if (error?.message?.includes("author_")) {
     const fallback = await selectRecords(
@@ -175,6 +191,15 @@ export async function saveCloudRecord(record, options = {}) {
     writeOptions = {
       ...writeOptions,
       includeAuthor: false,
+    };
+    const fallback = await writeRecord(writeOptions);
+    error = fallback.error;
+  }
+
+  if (error?.message?.includes("todo") && !options.requireTodo) {
+    writeOptions = {
+      ...writeOptions,
+      includeTodo: false,
     };
     const fallback = await writeRecord(writeOptions);
     error = fallback.error;

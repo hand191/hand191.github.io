@@ -9,7 +9,9 @@ create table if not exists public.entries (
   content_html text not null,
   created_at timestamptz not null default now(),
   author_id text,
-  author_color text
+  author_color text,
+  is_todo boolean not null default false,
+  todo_done boolean not null default false
 );
 
 create table if not exists public.entry_comments (
@@ -93,6 +95,12 @@ add column if not exists author_id text;
 
 alter table public.entries
 add column if not exists author_color text;
+
+alter table public.entries
+add column if not exists is_todo boolean not null default false;
+
+alter table public.entries
+add column if not exists todo_done boolean not null default false;
 
 create table if not exists public.entry_comments (
   id text primary key,
