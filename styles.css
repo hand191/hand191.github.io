@@ -372,7 +372,7 @@ p {
 }
 
 .record-card-todo {
-  padding-left: 34px;
+  padding-left: 8px;
 }
 
 .record-card-todo-done .record-content {
@@ -398,7 +398,7 @@ p {
   line-height: 1;
   padding: 0;
   position: absolute;
-  top: 36px;
+  top: 5px;
   width: 20px;
 }
 
@@ -586,6 +586,8 @@ p {
 .record-actions .reply-button {
   min-width: 42px;
   min-height: 28px;
+  max-width: 92px;
+  overflow: hidden;
   padding: 5px 9px;
   border: 1px solid #d6d3c8;
   border-radius: 6px;
@@ -595,6 +597,8 @@ p {
   font: inherit;
   font-size: 13px;
   line-height: 1.1;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .record-tool-button:hover,
@@ -693,12 +697,12 @@ p {
   }
 
   .record-card-todo {
-    padding-left: 31px;
+    padding-left: 7px;
   }
 
   .todo-toggle {
     left: 8px;
-    top: 36px;
+    top: 5px;
   }
 
   .record-toolbar {
@@ -707,15 +711,16 @@ p {
   }
 
   .record-more-actions {
-    gap: 4px;
+    gap: 3px;
     min-width: 0;
   }
 
   .record-tool-button {
+    max-width: 56px;
     min-width: auto;
     min-height: 28px;
-    padding: 5px 7px;
-    font-size: 12px;
+    padding: 5px 5px;
+    font-size: 11px;
   }
 
   .record-actions .reply-button {

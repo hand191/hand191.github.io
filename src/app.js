@@ -1,20 +1,20 @@
-import { debounce } from "./autosave.js?v=20260618-2";
+import { debounce } from "./autosave.js?v=20260618-3";
 import {
   AUTHORS,
   getAuthor,
   getRecordAuthorColor,
-} from "./authors.js?v=20260618-2";
+} from "./authors.js?v=20260618-3";
 import {
   createImageAttachment,
   imageBlobToDataUrl,
   preparePastedImageBlob,
-} from "./images.js?v=20260618-2";
+} from "./images.js?v=20260618-3";
 import {
   loadCloudRecords,
   saveCloudComment,
   saveCloudRecord,
   uploadCloudImage,
-} from "./cloudStorage.js?v=20260618-2";
+} from "./cloudStorage.js?v=20260618-3";
 import {
   addRecord,
   cleanRecordHtml,
@@ -22,7 +22,7 @@ import {
   hasLocalEmbeddedImage,
   isBlankHtml,
   mergeRecords,
-} from "./notes.js?v=20260618-2";
+} from "./notes.js?v=20260618-3";
 import {
   clearDraft,
   clearRecords,
@@ -35,7 +35,7 @@ import {
   saveDraft,
   saveRecords,
   saveSelectedAuthor,
-} from "./storage.js?v=20260618-2";
+} from "./storage.js?v=20260618-3";
 
 const noteInput = document.querySelector("#noteInput");
 const saveStatus = document.querySelector("#saveStatus");
@@ -124,6 +124,10 @@ function createClientId() {
   }
 
   return `${Date.now()}-${Math.random().toString(16).slice(2)}`;
+}
+
+function isMobileViewport() {
+  return window.matchMedia("(max-width: 640px)").matches;
 }
 
 function getSelectedAuthor() {
@@ -318,7 +322,7 @@ function renderRecords() {
     const chainButton = document.createElement("button");
     chainButton.className = "record-tool-button reply-chain-button";
     chainButton.type = "button";
-    chainButton.textContent = "查看回复链";
+    chainButton.textContent = isMobileViewport() ? "查看回复" : "查看回复链";
 
     const noteButton = document.createElement("button");
     noteButton.className = "record-tool-button note-button";
