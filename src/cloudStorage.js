@@ -173,6 +173,7 @@ export async function saveCloudRecord(record, options = {}) {
           .from(CLOUD_RECORDS_TABLE)
           .update(toDatabaseRecord(record, writeOptions))
           .eq("id", record.id)
+          .select("id")
       : client
           .from(CLOUD_RECORDS_TABLE)
           .upsert(toDatabaseRecord(record, writeOptions), {
@@ -182,7 +183,7 @@ export async function saveCloudRecord(record, options = {}) {
   };
 
   let writeOptions = {};
-  let { error } = await writeRecord(writeOptions);
+  let { data, error } = await writeRecord(writeOptions);
 
   if (
     error?.message?.includes("author_") &&
@@ -193,6 +194,7 @@ export async function saveCloudRecord(record, options = {}) {
       includeAuthor: false,
     };
     const fallback = await writeRecord(writeOptions);
+    data = fallback.data;
     error = fallback.error;
   }
 
@@ -202,11 +204,16 @@ export async function saveCloudRecord(record, options = {}) {
       includeTodo: false,
     };
     const fallback = await writeRecord(writeOptions);
+    data = fallback.data;
     error = fallback.error;
   }
 
   if (error) {
     throw error;
+  }
+
+  if (options.updateExisting && Array.isArray(data) && data.length === 0) {
+    throw new Error("数据库没有允许更新这条记录，请检查 entries 的 update policy");
   }
 
   return record;

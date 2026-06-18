@@ -119,6 +119,10 @@ for update
 using (true)
 with check (true);
 
+-- This update policy is required for todo/check status, replies, and future
+-- entry edits. Without it, the page may look clickable but Supabase updates
+-- zero rows.
+
 alter table public.entry_comments enable row level security;
 
 drop policy if exists "Allow public read entry comments" on public.entry_comments;

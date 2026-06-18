@@ -1,20 +1,20 @@
-import { debounce } from "./autosave.js?v=20260618-1";
+import { debounce } from "./autosave.js?v=20260618-2";
 import {
   AUTHORS,
   getAuthor,
   getRecordAuthorColor,
-} from "./authors.js?v=20260618-1";
+} from "./authors.js?v=20260618-2";
 import {
   createImageAttachment,
   imageBlobToDataUrl,
   preparePastedImageBlob,
-} from "./images.js?v=20260618-1";
+} from "./images.js?v=20260618-2";
 import {
   loadCloudRecords,
   saveCloudComment,
   saveCloudRecord,
   uploadCloudImage,
-} from "./cloudStorage.js?v=20260618-1";
+} from "./cloudStorage.js?v=20260618-2";
 import {
   addRecord,
   cleanRecordHtml,
@@ -22,7 +22,7 @@ import {
   hasLocalEmbeddedImage,
   isBlankHtml,
   mergeRecords,
-} from "./notes.js?v=20260618-1";
+} from "./notes.js?v=20260618-2";
 import {
   clearDraft,
   clearRecords,
@@ -35,7 +35,7 @@ import {
   saveDraft,
   saveRecords,
   saveSelectedAuthor,
-} from "./storage.js?v=20260618-1";
+} from "./storage.js?v=20260618-2";
 
 const noteInput = document.querySelector("#noteInput");
 const saveStatus = document.querySelector("#saveStatus");
@@ -647,6 +647,10 @@ function getSaveErrorMessage(error) {
 
   if (error?.message?.includes("todo")) {
     return "保存失败：数据库缺少待办字段";
+  }
+
+  if (error?.message?.includes("update policy")) {
+    return "保存失败：数据库没有允许更新";
   }
 
   if (error?.message) {
