@@ -4,15 +4,33 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>家庭信息</title>
-  <link rel="stylesheet" href="styles.css?v=20260618-5" />
+  <link rel="stylesheet" href="styles.css?v=20260618-6" />
 </head>
 <body>
-  <main class="app">
+  <section id="accessGate" class="access-gate">
+    <form id="accessForm" class="access-card">
+      <h1>家庭信息</h1>
+      <p>请输入家庭入口码。</p>
+      <input
+        id="accessCodeInput"
+        class="access-input"
+        type="password"
+        inputmode="text"
+        autocomplete="current-password"
+        placeholder="入口码"
+      />
+      <button class="archive-button" type="submit">进入</button>
+      <span id="accessError" class="access-error" hidden>入口码不对</span>
+    </form>
+  </section>
+
+  <main id="familyApp" class="app" hidden>
     <section class="editor-panel">
       <div class="topbar">
         <div>
           <h1>家庭信息</h1>
           <p>随手记录想法、学习过程和项目线索。</p>
+          <a class="drop-entry-link" href="drop/">共享入口</a>
         </div>
         <div class="role-switch" aria-label="当前记录用户">
           <button class="role-button" type="button" data-author-id="yingjun">英俊</button>
@@ -53,6 +71,6 @@
     </section>
   </main>
 
-  <script type="module" src="src/app.js?v=20260618-5"></script>
+  <script type="module" src="src/app.js?v=20260618-6"></script>
 </body>
 </html>

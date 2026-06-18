@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>共享入口</title>
+  <link rel="stylesheet" href="../styles.css?v=20260618-6" />
+</head>
+<body>
+  <main class="app drop-app">
+    <section class="editor-panel drop-editor">
+      <div class="topbar drop-topbar">
+        <div>
+          <h1>共享入口</h1>
+          <p>临时传文字、链接或图片。</p>
+        </div>
+        <div class="topbar-actions">
+          <button id="dropReloadButton" class="reload-button" type="button">重拉</button>
+          <span id="dropStatus" class="status">已准备</span>
+        </div>
+      </div>
+
+      <textarea
+        id="dropTextInput"
+        class="drop-text-input"
+        rows="4"
+        placeholder="输入文字或链接，也可以直接粘贴图片..."
+      ></textarea>
+
+      <div id="dropPreview" class="drop-preview" hidden></div>
+
+      <div class="drop-actions">
+        <input id="dropImageInput" class="drop-file-input" type="file" accept="image/*" />
+        <button id="dropSubmitButton" class="archive-button" type="button">投递</button>
+      </div>
+
+      <p class="drop-limits">每天最多 10 条，单张图片最大 2MB。</p>
+    </section>
+
+    <section class="records-panel">
+      <div class="section-heading">
+        <h2>临时内容</h2>
+        <span id="dropCount">0 条</span>
+      </div>
+      <div id="dropList" class="records-list"></div>
+    </section>
+  </main>
+
+  <script type="module" src="../src/dropApp.js?v=20260618-6"></script>
+</body>
+</html>

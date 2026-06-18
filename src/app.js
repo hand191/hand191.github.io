@@ -1,20 +1,21 @@
-import { debounce } from "./autosave.js?v=20260618-5";
+import { debounce } from "./autosave.js?v=20260618-6";
 import {
   AUTHORS,
   getAuthor,
   getRecordAuthorColor,
-} from "./authors.js?v=20260618-5";
+} from "./authors.js?v=20260618-6";
 import {
   createImageAttachment,
   imageBlobToDataUrl,
   preparePastedImageBlob,
-} from "./images.js?v=20260618-5";
+} from "./images.js?v=20260618-6";
 import {
   loadCloudRecords,
   saveCloudComment,
   saveCloudRecord,
   uploadCloudImage,
-} from "./cloudStorage.js?v=20260618-5";
+} from "./cloudStorage.js?v=20260618-6";
+import { FAMILY_ACCESS_CODE } from "./supabaseConfig.js?v=20260618-6";
 import {
   addRecord,
   cleanRecordHtml,
@@ -22,7 +23,7 @@ import {
   hasLocalEmbeddedImage,
   isBlankHtml,
   mergeRecords,
-} from "./notes.js?v=20260618-5";
+} from "./notes.js?v=20260618-6";
 import {
   clearDraft,
   clearRecords,
@@ -35,9 +36,14 @@ import {
   saveDraft,
   saveRecords,
   saveSelectedAuthor,
-} from "./storage.js?v=20260618-5";
+} from "./storage.js?v=20260618-6";
 
 const noteInput = document.querySelector("#noteInput");
+const accessGate = document.querySelector("#accessGate");
+const accessForm = document.querySelector("#accessForm");
+const accessCodeInput = document.querySelector("#accessCodeInput");
+const accessError = document.querySelector("#accessError");
+const familyApp = document.querySelector("#familyApp");
 const saveStatus = document.querySelector("#saveStatus");
 const reloadButton = document.querySelector("#reloadButton");
 const roleButtons = document.querySelectorAll(".role-button");
@@ -48,7 +54,7 @@ const recordsList = document.querySelector("#recordsList");
 const replyBanner = document.querySelector("#replyBanner");
 const replyTargetText = document.querySelector("#replyTargetText");
 const cancelReplyButton = document.querySelector("#cancelReplyButton");
-let records = loadRecords();
+let records = [];
 let isProcessingPaste = false;
 let isArchiving = false;
 let replyParentId = null;
@@ -57,6 +63,8 @@ let openReplyChainId = null;
 let openCommentFormId = null;
 let openMoreActionsId = null;
 let selectedAuthorId = loadSelectedAuthor();
+let isAppStarted = false;
+const ACCESS_GRANTED_KEY = "family-entry-access-granted";
 
 function setStatus(message, tone = "neutral") {
   saveStatus.textContent = message;
@@ -868,12 +876,56 @@ async function archiveCurrentContent() {
   updateArchiveButton();
 }
 
-noteInput.innerHTML = loadDraft();
-renderRoleSwitch();
-renderLastSavedTime();
-renderRecords();
-updateArchiveButton();
-refreshCloudRecords();
+function isAccessGranted() {
+  return localStorage.getItem(ACCESS_GRANTED_KEY) === "true";
+}
+
+function showFamilyApp() {
+  accessGate.hidden = true;
+  familyApp.hidden = false;
+}
+
+function startApp() {
+  if (isAppStarted) {
+    return;
+  }
+
+  isAppStarted = true;
+  records = loadRecords();
+  noteInput.innerHTML = loadDraft();
+  renderRoleSwitch();
+  renderLastSavedTime();
+  renderRecords();
+  updateArchiveButton();
+  refreshCloudRecords();
+}
+
+function unlockFamilyApp() {
+  localStorage.setItem(ACCESS_GRANTED_KEY, "true");
+  showFamilyApp();
+  startApp();
+}
+
+function handleAccessSubmit(event) {
+  event.preventDefault();
+
+  if (accessCodeInput.value.trim() !== FAMILY_ACCESS_CODE) {
+    accessError.hidden = false;
+    accessCodeInput.select();
+    return;
+  }
+
+  accessError.hidden = true;
+  unlockFamilyApp();
+}
+
+if (isAccessGranted()) {
+  unlockFamilyApp();
+} else {
+  familyApp.hidden = true;
+  accessGate.hidden = false;
+  accessCodeInput.focus();
+}
 
 noteInput.addEventListener("input", () => {
   setStatus("正在输入...", "working");
@@ -1057,6 +1109,8 @@ roleButtons.forEach((button) => {
     selectAuthor(button.dataset.authorId);
   });
 });
+
+accessForm.addEventListener("submit", handleAccessSubmit);
 
 cancelReplyButton.addEventListener("click", cancelReply);
 

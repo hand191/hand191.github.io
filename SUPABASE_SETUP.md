@@ -79,6 +79,56 @@ with check (bucket_id = 'entry-images');
 
 The bucket should be public so pasted screenshots can be viewed from other devices through their public URLs.
 
+For the public sharing inbox at `/drop/`, run this SQL too:
+
+```sql
+create table if not exists public.drop_entries (
+  id text primary key,
+  content_text text,
+  image_url text,
+  image_name text,
+  created_at timestamptz not null default now(),
+  is_deleted boolean not null default false
+);
+
+alter table public.drop_entries enable row level security;
+
+drop policy if exists "Allow public read drop entries" on public.drop_entries;
+drop policy if exists "Allow public insert drop entries" on public.drop_entries;
+drop policy if exists "Allow public update drop entries" on public.drop_entries;
+
+create policy "Allow public read drop entries"
+on public.drop_entries
+for select
+using (true);
+
+create policy "Allow public insert drop entries"
+on public.drop_entries
+for insert
+with check (true);
+
+create policy "Allow public update drop entries"
+on public.drop_entries
+for update
+using (true)
+with check (true);
+```
+
+Then create another public Storage bucket named:
+
+```text
+drop-images
+```
+
+And run:
+
+```sql
+create policy "Allow public drop image uploads"
+on storage.objects
+for insert
+with check (bucket_id = 'drop-images');
+```
+
 Apple Shortcuts can write directly through the Supabase REST API. See:
 
 ```text
