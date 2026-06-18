@@ -1,20 +1,20 @@
-import { debounce } from "./autosave.js?v=20260618-4";
+import { debounce } from "./autosave.js?v=20260618-5";
 import {
   AUTHORS,
   getAuthor,
   getRecordAuthorColor,
-} from "./authors.js?v=20260618-4";
+} from "./authors.js?v=20260618-5";
 import {
   createImageAttachment,
   imageBlobToDataUrl,
   preparePastedImageBlob,
-} from "./images.js?v=20260618-4";
+} from "./images.js?v=20260618-5";
 import {
   loadCloudRecords,
   saveCloudComment,
   saveCloudRecord,
   uploadCloudImage,
-} from "./cloudStorage.js?v=20260618-4";
+} from "./cloudStorage.js?v=20260618-5";
 import {
   addRecord,
   cleanRecordHtml,
@@ -22,7 +22,7 @@ import {
   hasLocalEmbeddedImage,
   isBlankHtml,
   mergeRecords,
-} from "./notes.js?v=20260618-4";
+} from "./notes.js?v=20260618-5";
 import {
   clearDraft,
   clearRecords,
@@ -35,7 +35,7 @@ import {
   saveDraft,
   saveRecords,
   saveSelectedAuthor,
-} from "./storage.js?v=20260618-4";
+} from "./storage.js?v=20260618-5";
 
 const noteInput = document.querySelector("#noteInput");
 const saveStatus = document.querySelector("#saveStatus");
@@ -628,7 +628,14 @@ async function updateRecordTodo(recordId, nextTodoState) {
     records = nextRecords;
     saveRecords(records);
     renderRecords();
-    setStatus(nextRecord.todoDone ? "待办已完成" : "待办已更新", "success");
+    setStatus(
+      !nextRecord.isTodo
+        ? "待办已取消"
+        : nextRecord.todoDone
+          ? "待办已完成"
+          : "待办已更新",
+      "success"
+    );
   } catch (error) {
     setStatus(getSaveErrorMessage(error), "error");
     console.error(error);
@@ -664,9 +671,15 @@ async function updateRecordMarker(recordId, entryMarker) {
   }
 }
 
-function markRecordAsTodo(recordId) {
+function toggleRecordTodo(recordId) {
+  const record = records.find((currentRecord) => currentRecord.id === recordId);
+
+  if (!record) {
+    return;
+  }
+
   updateRecordTodo(recordId, {
-    isTodo: true,
+    isTodo: !record.isTodo,
     todoDone: false,
   });
 }
@@ -979,7 +992,7 @@ recordsList.addEventListener("click", (event) => {
 
   if (todoButton) {
     const card = todoButton.closest(".record-card");
-    markRecordAsTodo(card.dataset.recordId);
+    toggleRecordTodo(card.dataset.recordId);
     return;
   }
 
