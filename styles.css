@@ -117,6 +117,13 @@ h1 {
   letter-spacing: 0;
 }
 
+.title-row {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  min-width: 0;
+}
+
 p {
   margin: 0;
   color: #667085;
@@ -126,11 +133,11 @@ p {
 
 .drop-entry-link {
   display: inline-block;
-  margin-top: 3px;
   color: #2563eb;
   font-size: 11px;
   line-height: 1.1;
   text-decoration: none;
+  white-space: nowrap;
 }
 
 .drop-entry-link:hover {
@@ -290,8 +297,21 @@ p {
 
 .drop-entry-actions {
   display: flex;
-  gap: 6px;
+  justify-content: space-between;
+  gap: 18px;
   margin-bottom: 6px;
+}
+
+.drop-entry-actions .record-tool-button {
+  min-width: 72px;
+  min-height: 36px;
+  padding: 8px 14px;
+  font-size: 15px;
+}
+
+.drop-delete-button {
+  border-color: #fecaca;
+  color: #b42318;
 }
 
 .drop-content {

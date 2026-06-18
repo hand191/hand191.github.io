@@ -1,14 +1,14 @@
 import {
   imageBlobToDataUrl,
   preparePastedImageBlob,
-} from "./images.js?v=20260618-6";
+} from "./images.js?v=20260618-7";
 import {
   countTodayDropEntries,
   deleteDropEntry,
   loadDropEntries,
   saveDropEntry,
   uploadDropImage,
-} from "./dropStorage.js?v=20260618-6";
+} from "./dropStorage.js?v=20260618-7";
 
 const MAX_DAILY_ENTRIES = 10;
 const MAX_IMAGE_BYTES = 2 * 1024 * 1024;

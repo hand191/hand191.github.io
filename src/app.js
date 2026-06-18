@@ -1,21 +1,21 @@
-import { debounce } from "./autosave.js?v=20260618-6";
+import { debounce } from "./autosave.js?v=20260618-7";
 import {
   AUTHORS,
   getAuthor,
   getRecordAuthorColor,
-} from "./authors.js?v=20260618-6";
+} from "./authors.js?v=20260618-7";
 import {
   createImageAttachment,
   imageBlobToDataUrl,
   preparePastedImageBlob,
-} from "./images.js?v=20260618-6";
+} from "./images.js?v=20260618-7";
 import {
   loadCloudRecords,
   saveCloudComment,
   saveCloudRecord,
   uploadCloudImage,
-} from "./cloudStorage.js?v=20260618-6";
-import { FAMILY_ACCESS_CODE } from "./supabaseConfig.js?v=20260618-6";
+} from "./cloudStorage.js?v=20260618-7";
+import { FAMILY_ACCESS_CODE } from "./supabaseConfig.js?v=20260618-7";
 import {
   addRecord,
   cleanRecordHtml,
@@ -23,7 +23,7 @@ import {
   hasLocalEmbeddedImage,
   isBlankHtml,
   mergeRecords,
-} from "./notes.js?v=20260618-6";
+} from "./notes.js?v=20260618-7";
 import {
   clearDraft,
   clearRecords,
@@ -36,7 +36,7 @@ import {
   saveDraft,
   saveRecords,
   saveSelectedAuthor,
-} from "./storage.js?v=20260618-6";
+} from "./storage.js?v=20260618-7";
 
 const noteInput = document.querySelector("#noteInput");
 const accessGate = document.querySelector("#accessGate");
