@@ -1,20 +1,20 @@
-import { debounce } from "./autosave.js?v=20260618-3";
+import { debounce } from "./autosave.js?v=20260618-4";
 import {
   AUTHORS,
   getAuthor,
   getRecordAuthorColor,
-} from "./authors.js?v=20260618-3";
+} from "./authors.js?v=20260618-4";
 import {
   createImageAttachment,
   imageBlobToDataUrl,
   preparePastedImageBlob,
-} from "./images.js?v=20260618-3";
+} from "./images.js?v=20260618-4";
 import {
   loadCloudRecords,
   saveCloudComment,
   saveCloudRecord,
   uploadCloudImage,
-} from "./cloudStorage.js?v=20260618-3";
+} from "./cloudStorage.js?v=20260618-4";
 import {
   addRecord,
   cleanRecordHtml,
@@ -22,7 +22,7 @@ import {
   hasLocalEmbeddedImage,
   isBlankHtml,
   mergeRecords,
-} from "./notes.js?v=20260618-3";
+} from "./notes.js?v=20260618-4";
 import {
   clearDraft,
   clearRecords,
@@ -35,7 +35,7 @@ import {
   saveDraft,
   saveRecords,
   saveSelectedAuthor,
-} from "./storage.js?v=20260618-3";
+} from "./storage.js?v=20260618-4";
 
 const noteInput = document.querySelector("#noteInput");
 const saveStatus = document.querySelector("#saveStatus");
@@ -55,6 +55,7 @@ let replyParentId = null;
 let editingRecordId = null;
 let openReplyChainId = null;
 let openCommentFormId = null;
+let openMoreActionsId = null;
 let selectedAuthorId = loadSelectedAuthor();
 
 function setStatus(message, tone = "neutral") {
@@ -268,6 +269,32 @@ function createCommentForm(record) {
   return form;
 }
 
+function createMoreActionsPanel(record) {
+  const panel = document.createElement("form");
+  panel.className = "more-actions-panel";
+  panel.dataset.recordId = record.id;
+
+  const input = document.createElement("input");
+  input.className = "marker-input";
+  input.name = "marker";
+  input.placeholder = "1️⃣ 2️⃣ 3️⃣ 🚩";
+  input.value = record.entryMarker || "";
+
+  const saveButton = document.createElement("button");
+  saveButton.className = "marker-save-button";
+  saveButton.type = "submit";
+  saveButton.textContent = "保存图标";
+
+  const clearButton = document.createElement("button");
+  clearButton.className = "marker-clear-button";
+  clearButton.type = "button";
+  clearButton.textContent = "清除图标";
+
+  panel.append(input, saveButton, clearButton);
+
+  return panel;
+}
+
 function renderRecords() {
   recordCount.textContent = `${records.length} 条`;
   recordsList.innerHTML = "";
@@ -377,6 +404,15 @@ function renderRecords() {
       card.append(todoToggle);
     }
 
+    if (record.entryMarker) {
+      card.classList.add("record-card-marked");
+
+      const marker = document.createElement("span");
+      marker.className = "entry-marker";
+      marker.textContent = record.entryMarker;
+      card.append(marker);
+    }
+
     card.prepend(toolbar);
     card.append(content);
 
@@ -390,6 +426,10 @@ function renderRecords() {
 
     if (openReplyChainId === record.id) {
       card.append(createReplyChainPanel(record.id));
+    }
+
+    if (openMoreActionsId === record.id) {
+      card.append(createMoreActionsPanel(record));
     }
 
     card.append(time);
@@ -595,6 +635,35 @@ async function updateRecordTodo(recordId, nextTodoState) {
   }
 }
 
+async function updateRecordMarker(recordId, entryMarker) {
+  const record = records.find((currentRecord) => currentRecord.id === recordId);
+
+  if (!record) {
+    return;
+  }
+
+  const nextRecord = {
+    ...record,
+    entryMarker,
+  };
+  const nextRecords = addRecord(records, nextRecord);
+
+  try {
+    await saveCloudRecord(nextRecord, {
+      updateExisting: true,
+      requireMarker: true,
+    });
+    records = nextRecords;
+    openMoreActionsId = null;
+    saveRecords(records);
+    renderRecords();
+    setStatus(entryMarker ? "图标已保存" : "图标已清除", "success");
+  } catch (error) {
+    setStatus(getSaveErrorMessage(error), "error");
+    console.error(error);
+  }
+}
+
 function markRecordAsTodo(recordId) {
   updateRecordTodo(recordId, {
     isTodo: true,
@@ -653,6 +722,10 @@ function getSaveErrorMessage(error) {
     return "保存失败：数据库缺少待办字段";
   }
 
+  if (error?.message?.includes("entry_marker")) {
+    return "保存失败：数据库缺少图标字段";
+  }
+
   if (error?.message?.includes("update policy")) {
     return "保存失败：数据库没有允许更新";
   }
@@ -699,6 +772,7 @@ async function reloadFromCloud() {
     editingRecordId = null;
     openReplyChainId = null;
     openCommentFormId = null;
+    openMoreActionsId = null;
     noteInput.innerHTML = "";
     clearDraft();
     clearRecords();
@@ -884,7 +958,12 @@ recordsList.addEventListener("click", (event) => {
   const moreButton = event.target.closest(".more-button");
 
   if (moreButton) {
-    setStatus("更多操作入口已就绪", "working");
+    const card = moreButton.closest(".record-card");
+    openMoreActionsId = openMoreActionsId === card.dataset.recordId
+      ? null
+      : card.dataset.recordId;
+    renderRecords();
+    setStatus(openMoreActionsId ? "更多操作已展开" : "更多操作已收起", "success");
     return;
   }
 
@@ -930,6 +1009,15 @@ recordsList.addEventListener("click", (event) => {
 });
 
 recordsList.addEventListener("submit", (event) => {
+  const markerForm = event.target.closest(".more-actions-panel");
+
+  if (markerForm) {
+    event.preventDefault();
+    const marker = new FormData(markerForm).get("marker").trim();
+    updateRecordMarker(markerForm.dataset.recordId, marker || null);
+    return;
+  }
+
   const form = event.target.closest(".comment-form");
 
   if (!form) {
@@ -938,6 +1026,17 @@ recordsList.addEventListener("submit", (event) => {
 
   event.preventDefault();
   addComment(form.dataset.recordId);
+});
+
+recordsList.addEventListener("click", (event) => {
+  const clearButton = event.target.closest(".marker-clear-button");
+
+  if (!clearButton) {
+    return;
+  }
+
+  const panel = clearButton.closest(".more-actions-panel");
+  updateRecordMarker(panel.dataset.recordId, null);
 });
 
 roleButtons.forEach((button) => {

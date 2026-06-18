@@ -39,6 +39,7 @@ export function createRecord(contentHtml, id, parentId = null) {
     authorColor: null,
     isTodo: false,
     todoDone: false,
+    entryMarker: null,
   };
 }
 

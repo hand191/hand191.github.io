@@ -11,7 +11,8 @@ create table if not exists public.entries (
   author_id text,
   author_color text,
   is_todo boolean not null default false,
-  todo_done boolean not null default false
+  todo_done boolean not null default false,
+  entry_marker text
 );
 
 create table if not exists public.entry_comments (
@@ -101,6 +102,9 @@ add column if not exists is_todo boolean not null default false;
 
 alter table public.entries
 add column if not exists todo_done boolean not null default false;
+
+alter table public.entries
+add column if not exists entry_marker text;
 
 create table if not exists public.entry_comments (
   id text primary key,

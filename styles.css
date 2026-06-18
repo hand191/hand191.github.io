@@ -407,6 +407,27 @@ p {
   border-color: #16a34a;
 }
 
+.entry-marker {
+  align-items: center;
+  display: flex;
+  font-size: 17px;
+  height: 20px;
+  justify-content: center;
+  left: 10px;
+  line-height: 1;
+  max-width: 44px;
+  overflow: hidden;
+  position: absolute;
+  text-overflow: ellipsis;
+  top: 5px;
+  white-space: nowrap;
+  z-index: 2;
+}
+
+.record-card-todo .entry-marker {
+  left: 34px;
+}
+
 .record-toolbar {
   display: grid;
   grid-template-columns: 1fr auto;
@@ -510,6 +531,47 @@ p {
   border: 1px solid #d6d3c8;
   border-radius: 6px;
   background: #ffffff;
+}
+
+.more-actions-panel {
+  align-items: center;
+  display: flex;
+  gap: 4px;
+  margin-top: 4px;
+}
+
+.marker-input {
+  min-width: 0;
+  width: 96px;
+}
+
+.marker-input,
+.marker-save-button,
+.marker-clear-button {
+  border: 1px solid #d6d3c8;
+  border-radius: 6px;
+  color: #475467;
+  font: inherit;
+  font-size: 12px;
+  min-height: 28px;
+  padding: 4px 6px;
+}
+
+.marker-save-button,
+.marker-clear-button {
+  background: #ffffff;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.marker-save-button {
+  border-color: #bfdbfe;
+  color: #1d4ed8;
+}
+
+.marker-clear-button {
+  border-color: #f1c6c6;
+  color: #b42318;
 }
 
 .comment-input {
@@ -703,6 +765,30 @@ p {
   .todo-toggle {
     left: 8px;
     top: 5px;
+  }
+
+  .entry-marker {
+    left: 8px;
+    max-width: 34px;
+  }
+
+  .record-card-todo .entry-marker {
+    left: 31px;
+  }
+
+  .more-actions-panel {
+    gap: 3px;
+  }
+
+  .marker-input {
+    width: 74px;
+  }
+
+  .marker-input,
+  .marker-save-button,
+  .marker-clear-button {
+    font-size: 11px;
+    padding: 4px 5px;
   }
 
   .record-toolbar {
