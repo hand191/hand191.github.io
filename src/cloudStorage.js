@@ -1,11 +1,12 @@
 import {
   CLOUD_COMMENTS_TABLE,
   CLOUD_IMAGES_BUCKET,
+  CLOUD_LINKS_TABLE,
   CLOUD_RECORDS_TABLE,
   SUPABASE_ANON_KEY,
   SUPABASE_URL,
   isCloudConfigured,
-} from "./supabaseConfig.js?v=20260619-3";
+} from "./supabaseConfig.js?v=20260619-4";
 
 let supabaseClient;
 
@@ -61,6 +62,7 @@ function fromDatabaseRecord(row) {
     contentHtml: row.content_html,
     createdAt: row.created_at,
     comments: [],
+    links: [],
     authorId: row.author_id || null,
     authorColor: row.author_color || null,
     isTodo: Boolean(row.is_todo),
@@ -92,6 +94,24 @@ function fromDatabaseComment(row) {
   };
 }
 
+function toDatabaseLink(link) {
+  return {
+    id: link.id,
+    source_entry_id: link.sourceEntryId,
+    target_entry_id: link.targetEntryId,
+    created_at: link.createdAt,
+  };
+}
+
+function fromDatabaseLink(row) {
+  return {
+    id: row.id,
+    sourceEntryId: row.source_entry_id,
+    targetEntryId: row.target_entry_id,
+    createdAt: row.created_at,
+  };
+}
+
 function attachComments(records, comments) {
   const commentsByRecordId = new Map();
 
@@ -104,6 +124,25 @@ function attachComments(records, comments) {
   return records.map((record) => ({
     ...record,
     comments: commentsByRecordId.get(record.id) || [],
+  }));
+}
+
+function attachLinks(records, links) {
+  const linksByRecordId = new Map();
+
+  for (const link of links) {
+    const sourceLinks = linksByRecordId.get(link.sourceEntryId) || [];
+    sourceLinks.push(link);
+    linksByRecordId.set(link.sourceEntryId, sourceLinks);
+
+    const targetLinks = linksByRecordId.get(link.targetEntryId) || [];
+    targetLinks.push(link);
+    linksByRecordId.set(link.targetEntryId, targetLinks);
+  }
+
+  return records.map((record) => ({
+    ...record,
+    links: linksByRecordId.get(record.id) || [],
   }));
 }
 
@@ -122,6 +161,23 @@ async function loadCloudComments(client) {
   }
 
   return data.map(fromDatabaseComment);
+}
+
+async function loadCloudLinks(client) {
+  const { data, error } = await client
+    .from(CLOUD_LINKS_TABLE)
+    .select("id, source_entry_id, target_entry_id, created_at")
+    .order("created_at", { ascending: true });
+
+  if (error?.message?.includes(CLOUD_LINKS_TABLE)) {
+    return [];
+  }
+
+  if (error) {
+    throw error;
+  }
+
+  return data.map(fromDatabaseLink);
 }
 
 export async function loadCloudRecords() {
@@ -184,8 +240,9 @@ export async function loadCloudRecords() {
 
   const records = data.map(fromDatabaseRecord);
   const comments = await loadCloudComments(client);
+  const links = await loadCloudLinks(client);
 
-  return attachComments(records, comments);
+  return attachLinks(attachComments(records, comments), links);
 }
 
 export async function saveCloudRecord(record, options = {}) {
@@ -283,6 +340,15 @@ export async function deleteCloudRecord(recordId) {
     throw childUpdateError;
   }
 
+  const { error: linkDeleteError } = await client
+    .from(CLOUD_LINKS_TABLE)
+    .delete()
+    .or(`source_entry_id.eq.${recordId},target_entry_id.eq.${recordId}`);
+
+  if (linkDeleteError && !linkDeleteError.message?.includes(CLOUD_LINKS_TABLE)) {
+    throw linkDeleteError;
+  }
+
   const { data, error } = await client
     .from(CLOUD_RECORDS_TABLE)
     .delete()
@@ -298,6 +364,46 @@ export async function deleteCloudRecord(recordId) {
   }
 
   return recordId;
+}
+
+export async function saveCloudLink(link) {
+  const client = await getSupabaseClient();
+
+  if (!client) {
+    return null;
+  }
+
+  const { error } = await client
+    .from(CLOUD_LINKS_TABLE)
+    .upsert(toDatabaseLink(link), {
+      ignoreDuplicates: true,
+      onConflict: "source_entry_id,target_entry_id",
+    });
+
+  if (error) {
+    throw error;
+  }
+
+  return link;
+}
+
+export async function deleteCloudLink(linkId) {
+  const client = await getSupabaseClient();
+
+  if (!client) {
+    return null;
+  }
+
+  const { error } = await client
+    .from(CLOUD_LINKS_TABLE)
+    .delete()
+    .eq("id", linkId);
+
+  if (error) {
+    throw error;
+  }
+
+  return linkId;
 }
 
 export async function saveCloudComment(comment) {

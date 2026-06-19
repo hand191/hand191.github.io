@@ -1,22 +1,24 @@
-import { debounce } from "./autosave.js?v=20260619-3";
+import { debounce } from "./autosave.js?v=20260619-4";
 import {
   AUTHORS,
   getAuthor,
   getRecordAuthorColor,
-} from "./authors.js?v=20260619-3";
+} from "./authors.js?v=20260619-4";
 import {
   createImageAttachment,
   imageBlobToDataUrl,
   preparePastedImageBlob,
-} from "./images.js?v=20260619-3";
+} from "./images.js?v=20260619-4";
 import {
   deleteCloudRecord,
+  deleteCloudLink,
   loadCloudRecords,
   saveCloudComment,
+  saveCloudLink,
   saveCloudRecord,
   uploadCloudImage,
-} from "./cloudStorage.js?v=20260619-3";
-import { FAMILY_ACCESS_CODE } from "./supabaseConfig.js?v=20260619-3";
+} from "./cloudStorage.js?v=20260619-4";
+import { FAMILY_ACCESS_CODE } from "./supabaseConfig.js?v=20260619-4";
 import {
   addRecord,
   cleanRecordHtml,
@@ -24,7 +26,7 @@ import {
   hasLocalEmbeddedImage,
   isBlankHtml,
   mergeRecords,
-} from "./notes.js?v=20260619-3";
+} from "./notes.js?v=20260619-4";
 import {
   clearDraft,
   clearRecords,
@@ -37,7 +39,7 @@ import {
   saveDraft,
   saveRecords,
   saveSelectedAuthor,
-} from "./storage.js?v=20260619-3";
+} from "./storage.js?v=20260619-4";
 
 const noteInput = document.querySelector("#noteInput");
 const accessGate = document.querySelector("#accessGate");
@@ -63,7 +65,9 @@ let replyParentId = null;
 let editingRecordId = null;
 let openReplyChainId = null;
 let openCommentFormId = null;
+let openLinksPanelId = null;
 let openMoreActionsId = null;
+let linkingSourceId = null;
 let selectedAuthorId = loadSelectedAuthor();
 let isAppStarted = false;
 const ACCESS_GRANTED_KEY = "family-entry-access-granted";
@@ -141,8 +145,31 @@ function createClientId() {
   return `${Date.now()}-${Math.random().toString(16).slice(2)}`;
 }
 
+function normalizeLinkPair(sourceEntryId, targetEntryId) {
+  return [sourceEntryId, targetEntryId].sort();
+}
+
 function isMobileViewport() {
   return window.matchMedia("(max-width: 640px)").matches;
+}
+
+function getRecordById(recordId) {
+  return records.find((record) => record.id === recordId);
+}
+
+function getLinkedRecordId(link, recordId) {
+  return link.sourceEntryId === recordId ? link.targetEntryId : link.sourceEntryId;
+}
+
+function hasLinkBetween(sourceEntryId, targetEntryId) {
+  return records.some((record) => {
+    return (record.links || []).some((link) => {
+      return (
+        (link.sourceEntryId === sourceEntryId && link.targetEntryId === targetEntryId) ||
+        (link.sourceEntryId === targetEntryId && link.targetEntryId === sourceEntryId)
+      );
+    });
+  });
 }
 
 function getSelectedAuthor() {
@@ -351,6 +378,41 @@ function createCommentForm(record) {
   return form;
 }
 
+function createLinksPanel(record) {
+  const panel = document.createElement("div");
+  panel.className = "links-panel";
+  const links = record.links || [];
+
+  if (!links.length) {
+    panel.textContent = "还没有关联记录。";
+    return panel;
+  }
+
+  for (const link of links) {
+    const linkedRecordId = getLinkedRecordId(link, record.id);
+    const linkedRecord = getRecordById(linkedRecordId);
+    const item = document.createElement("div");
+    item.className = "link-item";
+
+    const summary = document.createElement("span");
+    summary.className = "link-summary";
+    summary.textContent = linkedRecord
+      ? `${getRecordSummary(linkedRecord)} · ${formatCompactRecordTime(linkedRecord.createdAt)}`
+      : "关联记录已删除";
+
+    const removeButton = document.createElement("button");
+    removeButton.className = "link-remove-button";
+    removeButton.type = "button";
+    removeButton.dataset.linkId = link.id;
+    removeButton.textContent = "移除";
+
+    item.append(summary, removeButton);
+    panel.append(item);
+  }
+
+  return panel;
+}
+
 function createMoreActionsPanel(record) {
   const panel = document.createElement("form");
   panel.className = "more-actions-panel";
@@ -377,7 +439,12 @@ function createMoreActionsPanel(record) {
   deleteButton.type = "button";
   deleteButton.textContent = "删除";
 
-  panel.append(input, saveButton, clearButton, deleteButton);
+  const linkButton = document.createElement("button");
+  linkButton.className = "marker-link-button";
+  linkButton.type = "button";
+  linkButton.textContent = "关联";
+
+  panel.append(input, saveButton, clearButton, linkButton, deleteButton);
 
   if (isAdvancedMode) {
     const hiddenButton = document.createElement("button");
@@ -411,6 +478,10 @@ function renderRecords() {
 
     if (record.isHidden) {
       card.classList.add("record-card-hidden");
+    }
+
+    if (linkingSourceId === record.id) {
+      card.classList.add("record-card-linking");
     }
 
     const authorBorderColor = getRecordAuthorColor(record);
@@ -517,6 +588,14 @@ function renderRecords() {
     card.prepend(toolbar);
     card.append(content);
 
+    if ((record.links || []).length) {
+      const linksButton = document.createElement("button");
+      linksButton.className = "record-links-button";
+      linksButton.type = "button";
+      linksButton.textContent = `关联 ${record.links.length}`;
+      card.append(linksButton);
+    }
+
     if ((record.comments || []).length) {
       card.append(createCommentsPanel(record));
     }
@@ -527,6 +606,10 @@ function renderRecords() {
 
     if (openReplyChainId === record.id) {
       card.append(createReplyChainPanel(record.id));
+    }
+
+    if (openLinksPanelId === record.id) {
+      card.append(createLinksPanel(record));
     }
 
     if (openMoreActionsId === record.id) {
@@ -816,11 +899,95 @@ async function removeRecord(recordId) {
 
   try {
     await deleteCloudRecord(recordId);
-    records = records.filter((currentRecord) => currentRecord.id !== recordId);
+    records = records
+      .filter((currentRecord) => currentRecord.id !== recordId)
+      .map((currentRecord) => ({
+        ...currentRecord,
+        links: (currentRecord.links || []).filter((link) => {
+          return link.sourceEntryId !== recordId && link.targetEntryId !== recordId;
+        }),
+      }));
     openMoreActionsId = null;
     saveRecords(records);
     renderRecords();
     setStatus("已删除", "success");
+  } catch (error) {
+    setStatus(getSaveErrorMessage(error), "error");
+    console.error(error);
+  }
+}
+
+function startLinking(recordId) {
+  linkingSourceId = recordId;
+  openMoreActionsId = null;
+  renderRecords();
+  setStatus("请选择要关联的另一条记录", "working");
+}
+
+async function createRecordLink(targetRecordId) {
+  if (!linkingSourceId) {
+    return false;
+  }
+
+  if (linkingSourceId === targetRecordId) {
+    linkingSourceId = null;
+    setStatus("不能关联自己", "error");
+    renderRecords();
+    return true;
+  }
+
+  if (hasLinkBetween(linkingSourceId, targetRecordId)) {
+    linkingSourceId = null;
+    setStatus("这两条已经关联过", "success");
+    renderRecords();
+    return true;
+  }
+
+  const [sourceEntryId, targetEntryId] = normalizeLinkPair(
+    linkingSourceId,
+    targetRecordId
+  );
+  const link = {
+    id: createClientId(),
+    sourceEntryId,
+    targetEntryId,
+    createdAt: new Date().toISOString(),
+  };
+
+  try {
+    await saveCloudLink(link);
+    records = records.map((record) => {
+      if (record.id !== sourceEntryId && record.id !== targetEntryId) {
+        return record;
+      }
+
+      return {
+        ...record,
+        links: [...(record.links || []), link],
+      };
+    });
+    linkingSourceId = null;
+    saveRecords(records);
+    renderRecords();
+    setStatus("关联已保存", "success");
+  } catch (error) {
+    setStatus(getSaveErrorMessage(error), "error");
+    console.error(error);
+  }
+
+  return true;
+}
+
+async function removeRecordLink(linkId) {
+  try {
+    await deleteCloudLink(linkId);
+    records = records.map((record) => ({
+      ...record,
+      links: (record.links || []).filter((link) => link.id !== linkId),
+    }));
+    saveRecords(records);
+    renderRecords();
+    setStatus("关联已移除", "success");
   } catch (error) {
     setStatus(getSaveErrorMessage(error), "error");
     console.error(error);
@@ -887,6 +1054,10 @@ function getSaveErrorMessage(error) {
     return "保存失败：数据库缺少 entry_comments 表";
   }
 
+  if (error?.message?.includes("entry_links")) {
+    return "保存失败：数据库缺少 entry_links 表";
+  }
+
   if (error?.message?.includes("todo")) {
     return "保存失败：数据库缺少待办字段";
   }
@@ -948,8 +1119,10 @@ async function reloadFromCloud() {
     replyParentId = null;
     editingRecordId = null;
     openReplyChainId = null;
+    openLinksPanelId = null;
     openCommentFormId = null;
     openMoreActionsId = null;
+    linkingSourceId = null;
     noteInput.innerHTML = "";
     clearDraft();
     clearRecords();
@@ -1159,12 +1332,43 @@ noteInput.addEventListener("keydown", (event) => {
 });
 
 recordsList.addEventListener("click", (event) => {
+  const linkRemoveButton = event.target.closest(".link-remove-button");
+
+  if (linkRemoveButton) {
+    removeRecordLink(linkRemoveButton.dataset.linkId);
+    return;
+  }
+
+  const linksButton = event.target.closest(".record-links-button");
+
+  if (linksButton) {
+    const card = linksButton.closest(".record-card");
+    openLinksPanelId = openLinksPanelId === card.dataset.recordId
+      ? null
+      : card.dataset.recordId;
+    renderRecords();
+    setStatus(openLinksPanelId ? "已展开关联" : "已收起关联", "success");
+    return;
+  }
+
   const commentCancelButton = event.target.closest(".comment-cancel-button");
 
   if (commentCancelButton) {
     openCommentFormId = null;
     renderRecords();
     setStatus("已取消评论", "success");
+    return;
+  }
+
+  const cardForLinking = event.target.closest(".record-card");
+
+  if (
+    linkingSourceId &&
+    cardForLinking &&
+    !event.target.closest("button") &&
+    !event.target.closest("a")
+  ) {
+    createRecordLink(cardForLinking.dataset.recordId);
     return;
   }
 
@@ -1271,6 +1475,14 @@ recordsList.addEventListener("click", (event) => {
   if (deleteButton) {
     const panel = deleteButton.closest(".more-actions-panel");
     removeRecord(panel.dataset.recordId);
+    return;
+  }
+
+  const linkButton = event.target.closest(".marker-link-button");
+
+  if (linkButton) {
+    const panel = linkButton.closest(".more-actions-panel");
+    startLinking(panel.dataset.recordId);
     return;
   }
 

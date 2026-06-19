@@ -35,6 +35,7 @@ export function createRecord(contentHtml, id, parentId = null) {
     contentHtml: cleanRecordHtml(contentHtml),
     createdAt: new Date().toISOString(),
     comments: [],
+    links: [],
     authorId: null,
     authorColor: null,
     isTodo: false,

@@ -25,8 +25,19 @@ create table if not exists public.entry_comments (
   author_color text
 );
 
+create table if not exists public.entry_links (
+  id text primary key,
+  source_entry_id text not null references public.entries(id) on delete cascade,
+  target_entry_id text not null references public.entries(id) on delete cascade,
+  created_at timestamptz not null default now()
+);
+
+create unique index if not exists entry_links_unique_pair
+on public.entry_links(source_entry_id, target_entry_id);
+
 alter table public.entries enable row level security;
 alter table public.entry_comments enable row level security;
+alter table public.entry_links enable row level security;
 
 create policy "Allow public read entries"
 on public.entries
@@ -58,6 +69,21 @@ create policy "Allow public insert entry comments"
 on public.entry_comments
 for insert
 with check (true);
+
+create policy "Allow public read entry links"
+on public.entry_links
+for select
+using (true);
+
+create policy "Allow public insert entry links"
+on public.entry_links
+for insert
+with check (true);
+
+create policy "Allow public delete entry links"
+on public.entry_links
+for delete
+using (true);
 ```
 
 Then copy your project URL and anon public key into:
@@ -174,6 +200,16 @@ create table if not exists public.entry_comments (
   author_color text
 );
 
+create table if not exists public.entry_links (
+  id text primary key,
+  source_entry_id text not null references public.entries(id) on delete cascade,
+  target_entry_id text not null references public.entries(id) on delete cascade,
+  created_at timestamptz not null default now()
+);
+
+create unique index if not exists entry_links_unique_pair
+on public.entry_links(source_entry_id, target_entry_id);
+
 drop policy if exists "Allow public update entries" on public.entries;
 
 create policy "Allow public update entries"
@@ -194,6 +230,7 @@ using (true);
 -- Without them, the page may look clickable but Supabase updates zero rows.
 
 alter table public.entry_comments enable row level security;
+alter table public.entry_links enable row level security;
 
 drop policy if exists "Allow public read entry comments" on public.entry_comments;
 drop policy if exists "Allow public insert entry comments" on public.entry_comments;
@@ -207,4 +244,23 @@ create policy "Allow public insert entry comments"
 on public.entry_comments
 for insert
 with check (true);
+
+drop policy if exists "Allow public read entry links" on public.entry_links;
+drop policy if exists "Allow public insert entry links" on public.entry_links;
+drop policy if exists "Allow public delete entry links" on public.entry_links;
+
+create policy "Allow public read entry links"
+on public.entry_links
+for select
+using (true);
+
+create policy "Allow public insert entry links"
+on public.entry_links
+for insert
+with check (true);
+
+create policy "Allow public delete entry links"
+on public.entry_links
+for delete
+using (true);
 ```

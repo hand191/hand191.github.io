@@ -3,6 +3,7 @@ export const SUPABASE_ANON_KEY =
   "sb_publishable_gKyIEllCTpKJqtYJ7A6mng_8iMBxcwJ";
 export const CLOUD_RECORDS_TABLE = "entries";
 export const CLOUD_COMMENTS_TABLE = "entry_comments";
+export const CLOUD_LINKS_TABLE = "entry_links";
 export const CLOUD_IMAGES_BUCKET = "entry-images";
 export const DROP_RECORDS_TABLE = "drop_entries";
 export const DROP_IMAGES_BUCKET = "drop-images";

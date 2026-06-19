@@ -615,6 +615,11 @@ p {
   line-height: 1;
 }
 
+.record-card-linking {
+  outline: 2px solid #7c3aed;
+  outline-offset: 2px;
+}
+
 .record-card-own {
   margin-right: var(--dialog-offset);
   border-left-color: var(--author-color);
@@ -732,7 +737,8 @@ p {
 }
 
 .comments-panel,
-.reply-chain-panel {
+.reply-chain-panel,
+.links-panel {
   margin-top: 3px;
   padding: 0;
   border: 0;
@@ -740,7 +746,8 @@ p {
 }
 
 .comment-item,
-.reply-chain-item {
+.reply-chain-item,
+.link-item {
   display: block;
   position: relative;
   min-height: 18px;
@@ -750,7 +757,8 @@ p {
 }
 
 .comment-item + .comment-item,
-.reply-chain-item + .reply-chain-item {
+.reply-chain-item + .reply-chain-item,
+.link-item + .link-item {
   margin-top: 3px;
 }
 
@@ -759,7 +767,8 @@ p {
 }
 
 .comment-text,
-.reply-chain-summary {
+.reply-chain-summary,
+.link-summary {
   color: var(--text-secondary);
   font-size: 12px;
   line-height: 1.2;
@@ -807,7 +816,10 @@ p {
 .marker-save-button,
 .marker-clear-button,
 .marker-delete-button,
-.marker-hide-button {
+.marker-hide-button,
+.marker-link-button,
+.link-remove-button,
+.record-links-button {
   border: 1px solid var(--border);
   border-radius: 6px;
   color: var(--button-text);
@@ -820,7 +832,10 @@ p {
 .marker-save-button,
 .marker-clear-button,
 .marker-delete-button,
-.marker-hide-button {
+.marker-hide-button,
+.marker-link-button,
+.link-remove-button,
+.record-links-button {
   background: var(--input-bg);
   cursor: pointer;
   white-space: nowrap;
@@ -844,6 +859,27 @@ p {
 .marker-hide-button {
   border-color: #ddd6fe;
   color: #7c3aed;
+}
+
+.marker-link-button,
+.record-links-button {
+  border-color: #ddd6fe;
+  color: #7c3aed;
+}
+
+.record-links-button {
+  margin: 3px 0 0;
+}
+
+.link-remove-button {
+  position: absolute;
+  right: 0;
+  top: 0;
+  min-height: 20px;
+  padding: 1px 5px;
+  border-color: #f1c6c6;
+  color: #b42318;
+  font-size: 11px;
 }
 
 .comment-input {
