@@ -867,6 +867,19 @@ p {
   color: #7c3aed;
 }
 
+.link-target-button {
+  min-height: 30px;
+  margin: 4px 0 0;
+  padding: 5px 9px;
+  border: 1px solid #7c3aed;
+  border-radius: 6px;
+  background: color-mix(in srgb, #7c3aed 12%, var(--input-bg));
+  color: #7c3aed;
+  cursor: pointer;
+  font: inherit;
+  font-size: 13px;
+}
+
 .record-links-button {
   margin: 3px 0 0;
 }

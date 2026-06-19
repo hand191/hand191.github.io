@@ -1,14 +1,14 @@
-import { debounce } from "./autosave.js?v=20260619-4";
+import { debounce } from "./autosave.js?v=20260619-5";
 import {
   AUTHORS,
   getAuthor,
   getRecordAuthorColor,
-} from "./authors.js?v=20260619-4";
+} from "./authors.js?v=20260619-5";
 import {
   createImageAttachment,
   imageBlobToDataUrl,
   preparePastedImageBlob,
-} from "./images.js?v=20260619-4";
+} from "./images.js?v=20260619-5";
 import {
   deleteCloudRecord,
   deleteCloudLink,
@@ -17,8 +17,8 @@ import {
   saveCloudLink,
   saveCloudRecord,
   uploadCloudImage,
-} from "./cloudStorage.js?v=20260619-4";
-import { FAMILY_ACCESS_CODE } from "./supabaseConfig.js?v=20260619-4";
+} from "./cloudStorage.js?v=20260619-5";
+import { FAMILY_ACCESS_CODE } from "./supabaseConfig.js?v=20260619-5";
 import {
   addRecord,
   cleanRecordHtml,
@@ -26,7 +26,7 @@ import {
   hasLocalEmbeddedImage,
   isBlankHtml,
   mergeRecords,
-} from "./notes.js?v=20260619-4";
+} from "./notes.js?v=20260619-5";
 import {
   clearDraft,
   clearRecords,
@@ -39,7 +39,7 @@ import {
   saveDraft,
   saveRecords,
   saveSelectedAuthor,
-} from "./storage.js?v=20260619-4";
+} from "./storage.js?v=20260619-5";
 
 const noteInput = document.querySelector("#noteInput");
 const accessGate = document.querySelector("#accessGate");
@@ -588,6 +588,14 @@ function renderRecords() {
     card.prepend(toolbar);
     card.append(content);
 
+    if (linkingSourceId && linkingSourceId !== record.id) {
+      const linkTargetButton = document.createElement("button");
+      linkTargetButton.className = "link-target-button";
+      linkTargetButton.type = "button";
+      linkTargetButton.textContent = "选为关联";
+      card.append(linkTargetButton);
+    }
+
     if ((record.links || []).length) {
       const linksButton = document.createElement("button");
       linksButton.className = "record-links-button";
@@ -972,6 +980,8 @@ async function createRecordLink(targetRecordId) {
     setStatus("关联已保存", "success");
   } catch (error) {
     setStatus(getSaveErrorMessage(error), "error");
+    linkingSourceId = null;
+    renderRecords();
     console.error(error);
   }
 
@@ -1332,6 +1342,14 @@ noteInput.addEventListener("keydown", (event) => {
 });
 
 recordsList.addEventListener("click", (event) => {
+  const linkTargetButton = event.target.closest(".link-target-button");
+
+  if (linkTargetButton) {
+    const card = linkTargetButton.closest(".record-card");
+    createRecordLink(card.dataset.recordId);
+    return;
+  }
+
   const linkRemoveButton = event.target.closest(".link-remove-button");
 
   if (linkRemoveButton) {
