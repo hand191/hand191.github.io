@@ -6,7 +6,7 @@ import {
   SUPABASE_ANON_KEY,
   SUPABASE_URL,
   isCloudConfigured,
-} from "./supabaseConfig.js?v=20260619-5";
+} from "./supabaseConfig.js?v=20260619-6";
 
 let supabaseClient;
 
@@ -375,12 +375,13 @@ export async function saveCloudLink(link) {
 
   const { error } = await client
     .from(CLOUD_LINKS_TABLE)
-    .upsert(toDatabaseLink(link), {
-      ignoreDuplicates: true,
-      onConflict: "source_entry_id,target_entry_id",
-    });
+    .insert(toDatabaseLink(link));
 
   if (error) {
+    if (error.code === "23505") {
+      return link;
+    }
+
     throw error;
   }
 

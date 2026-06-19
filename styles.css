@@ -745,6 +745,13 @@ p {
   background: transparent;
 }
 
+.links-panel-title {
+  color: #7c3aed;
+  font-size: 11px;
+  line-height: 1.2;
+  margin-bottom: 2px;
+}
+
 .comment-item,
 .reply-chain-item,
 .link-item {

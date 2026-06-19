@@ -1,14 +1,14 @@
-import { debounce } from "./autosave.js?v=20260619-5";
+import { debounce } from "./autosave.js?v=20260619-6";
 import {
   AUTHORS,
   getAuthor,
   getRecordAuthorColor,
-} from "./authors.js?v=20260619-5";
+} from "./authors.js?v=20260619-6";
 import {
   createImageAttachment,
   imageBlobToDataUrl,
   preparePastedImageBlob,
-} from "./images.js?v=20260619-5";
+} from "./images.js?v=20260619-6";
 import {
   deleteCloudRecord,
   deleteCloudLink,
@@ -17,8 +17,8 @@ import {
   saveCloudLink,
   saveCloudRecord,
   uploadCloudImage,
-} from "./cloudStorage.js?v=20260619-5";
-import { FAMILY_ACCESS_CODE } from "./supabaseConfig.js?v=20260619-5";
+} from "./cloudStorage.js?v=20260619-6";
+import { FAMILY_ACCESS_CODE } from "./supabaseConfig.js?v=20260619-6";
 import {
   addRecord,
   cleanRecordHtml,
@@ -26,7 +26,7 @@ import {
   hasLocalEmbeddedImage,
   isBlankHtml,
   mergeRecords,
-} from "./notes.js?v=20260619-5";
+} from "./notes.js?v=20260619-6";
 import {
   clearDraft,
   clearRecords,
@@ -39,7 +39,7 @@ import {
   saveDraft,
   saveRecords,
   saveSelectedAuthor,
-} from "./storage.js?v=20260619-5";
+} from "./storage.js?v=20260619-6";
 
 const noteInput = document.querySelector("#noteInput");
 const accessGate = document.querySelector("#accessGate");
@@ -387,6 +387,11 @@ function createLinksPanel(record) {
     panel.textContent = "还没有关联记录。";
     return panel;
   }
+
+  const title = document.createElement("div");
+  title.className = "links-panel-title";
+  title.textContent = "关联记录";
+  panel.append(title);
 
   for (const link of links) {
     const linkedRecordId = getLinkedRecordId(link, record.id);
@@ -961,27 +966,29 @@ async function createRecordLink(targetRecordId) {
     targetEntryId,
     createdAt: new Date().toISOString(),
   };
+  const nextRecords = records.map((record) => {
+    if (record.id !== sourceEntryId && record.id !== targetEntryId) {
+      return record;
+    }
+
+    return {
+      ...record,
+      links: [...(record.links || []), link],
+    };
+  });
+
+  records = nextRecords;
+  linkingSourceId = null;
+  openLinksPanelId = sourceEntryId;
+  saveRecords(records);
+  renderRecords();
+  setStatus("关联已保存，正在同步...", "working");
 
   try {
     await saveCloudLink(link);
-    records = records.map((record) => {
-      if (record.id !== sourceEntryId && record.id !== targetEntryId) {
-        return record;
-      }
-
-      return {
-        ...record,
-        links: [...(record.links || []), link],
-      };
-    });
-    linkingSourceId = null;
-    saveRecords(records);
-    renderRecords();
-    setStatus("关联已保存", "success");
+    setStatus("关联已保存并同步", "success");
   } catch (error) {
-    setStatus(getSaveErrorMessage(error), "error");
-    linkingSourceId = null;
-    renderRecords();
+    setStatus(`关联已保存到本机，云同步失败：${getSaveErrorMessage(error)}`, "error");
     console.error(error);
   }
 
