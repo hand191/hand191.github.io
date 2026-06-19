@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>共享入口</title>
-  <link rel="stylesheet" href="../styles.css?v=20260618-7" />
+  <link rel="stylesheet" href="../styles.css?v=20260619-1" />
 </head>
 <body>
   <main class="app drop-app">
@@ -15,6 +15,7 @@
           <p>临时传文字、链接或图片。</p>
         </div>
         <div class="topbar-actions">
+          <button id="themeButton" class="reload-button" type="button" aria-label="切换夜间模式">夜间</button>
           <button id="dropReloadButton" class="reload-button" type="button">重拉</button>
           <span id="dropStatus" class="status">已准备</span>
         </div>
@@ -46,6 +47,7 @@
     </section>
   </main>
 
+  <script type="module" src="../src/theme.js?v=20260619-1"></script>
   <script type="module" src="../src/dropApp.js?v=20260618-7"></script>
 </body>
 </html>
