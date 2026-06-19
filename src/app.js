@@ -1,25 +1,22 @@
-import { debounce } from "./autosave.js?v=20260619-2";
+import { debounce } from "./autosave.js?v=20260619-3";
 import {
   AUTHORS,
   getAuthor,
   getRecordAuthorColor,
-} from "./authors.js?v=20260619-2";
+} from "./authors.js?v=20260619-3";
 import {
   createImageAttachment,
   imageBlobToDataUrl,
   preparePastedImageBlob,
-} from "./images.js?v=20260619-2";
+} from "./images.js?v=20260619-3";
 import {
   deleteCloudRecord,
   loadCloudRecords,
   saveCloudComment,
   saveCloudRecord,
   uploadCloudImage,
-} from "./cloudStorage.js?v=20260619-2";
-import {
-  ADVANCED_ACCESS_CODE,
-  FAMILY_ACCESS_CODE,
-} from "./supabaseConfig.js?v=20260619-2";
+} from "./cloudStorage.js?v=20260619-3";
+import { FAMILY_ACCESS_CODE } from "./supabaseConfig.js?v=20260619-3";
 import {
   addRecord,
   cleanRecordHtml,
@@ -27,7 +24,7 @@ import {
   hasLocalEmbeddedImage,
   isBlankHtml,
   mergeRecords,
-} from "./notes.js?v=20260619-2";
+} from "./notes.js?v=20260619-3";
 import {
   clearDraft,
   clearRecords,
@@ -40,7 +37,7 @@ import {
   saveDraft,
   saveRecords,
   saveSelectedAuthor,
-} from "./storage.js?v=20260619-2";
+} from "./storage.js?v=20260619-3";
 
 const noteInput = document.querySelector("#noteInput");
 const accessGate = document.querySelector("#accessGate");
@@ -221,7 +218,7 @@ function handleAdvancedCommand() {
     return false;
   }
 
-  if (text === `${ADVANCED_COMMAND_PREFIX} ${ADVANCED_ACCESS_CODE}`) {
+  if (text === ADVANCED_COMMAND_PREFIX) {
     clearCommandInput();
     setAdvancedMode(true);
     return true;
