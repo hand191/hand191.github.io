@@ -1,14 +1,14 @@
-import { debounce } from "./autosave.js?v=20260619-6";
+import { debounce } from "./autosave.js?v=20260619-7";
 import {
   AUTHORS,
   getAuthor,
   getRecordAuthorColor,
-} from "./authors.js?v=20260619-6";
+} from "./authors.js?v=20260619-7";
 import {
   createImageAttachment,
   imageBlobToDataUrl,
   preparePastedImageBlob,
-} from "./images.js?v=20260619-6";
+} from "./images.js?v=20260619-7";
 import {
   deleteCloudRecord,
   deleteCloudLink,
@@ -17,8 +17,8 @@ import {
   saveCloudLink,
   saveCloudRecord,
   uploadCloudImage,
-} from "./cloudStorage.js?v=20260619-6";
-import { FAMILY_ACCESS_CODE } from "./supabaseConfig.js?v=20260619-6";
+} from "./cloudStorage.js?v=20260619-7";
+import { FAMILY_ACCESS_CODE } from "./supabaseConfig.js?v=20260619-7";
 import {
   addRecord,
   cleanRecordHtml,
@@ -26,7 +26,7 @@ import {
   hasLocalEmbeddedImage,
   isBlankHtml,
   mergeRecords,
-} from "./notes.js?v=20260619-6";
+} from "./notes.js?v=20260619-7";
 import {
   clearDraft,
   clearRecords,
@@ -39,7 +39,7 @@ import {
   saveDraft,
   saveRecords,
   saveSelectedAuthor,
-} from "./storage.js?v=20260619-6";
+} from "./storage.js?v=20260619-7";
 
 const noteInput = document.querySelector("#noteInput");
 const accessGate = document.querySelector("#accessGate");
@@ -1067,12 +1067,34 @@ function getSaveErrorMessage(error) {
     return "保存失败：内容太大";
   }
 
+  if (
+    error?.message?.includes("row-level security") ||
+    error?.message?.includes("violates row-level security")
+  ) {
+    return "保存失败：数据库 RLS 没允许这个操作";
+  }
+
+  if (
+    error?.code === "42P01" ||
+    error?.message?.includes("relation") ||
+    error?.message?.includes("Could not find the table")
+  ) {
+    return "保存失败：数据库缺少对应表";
+  }
+
+  if (
+    error?.message?.includes("schema cache") ||
+    error?.message?.includes("Could not find")
+  ) {
+    return "保存失败：数据库字段或缓存未刷新";
+  }
+
   if (error?.message?.includes("entry_comments")) {
     return "保存失败：数据库缺少 entry_comments 表";
   }
 
   if (error?.message?.includes("entry_links")) {
-    return "保存失败：数据库缺少 entry_links 表";
+    return `保存失败：${error.message}`;
   }
 
   if (error?.message?.includes("todo")) {

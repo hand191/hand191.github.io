@@ -4,7 +4,7 @@ import {
   SUPABASE_ANON_KEY,
   SUPABASE_URL,
   isCloudConfigured,
-} from "./supabaseConfig.js?v=20260619-6";
+} from "./supabaseConfig.js?v=20260619-7";
 
 let supabaseClient;
 
