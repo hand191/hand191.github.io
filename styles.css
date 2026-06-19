@@ -554,6 +554,24 @@ p {
   line-height: 1.1;
 }
 
+.hidden-only-button {
+  min-height: 24px;
+  padding: 3px 7px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--input-bg);
+  color: var(--button-text);
+  cursor: pointer;
+  font: inherit;
+  font-size: 12px;
+  line-height: 1.1;
+}
+
+.hidden-only-button-active {
+  border-color: #7c3aed;
+  color: #7c3aed;
+}
+
 .records-list {
   display: grid;
   gap: 6px;
@@ -581,6 +599,20 @@ p {
 
 .record-card-with-author {
   border-color: var(--border-soft);
+}
+
+.record-card-hidden {
+  opacity: 0.72;
+}
+
+.record-card-hidden::after {
+  content: "隐藏";
+  position: absolute;
+  right: 10px;
+  top: 34px;
+  color: var(--text-muted);
+  font-size: 10px;
+  line-height: 1;
 }
 
 .record-card-own {
@@ -773,7 +805,9 @@ p {
 
 .marker-input,
 .marker-save-button,
-.marker-clear-button {
+.marker-clear-button,
+.marker-delete-button,
+.marker-hide-button {
   border: 1px solid var(--border);
   border-radius: 6px;
   color: var(--button-text);
@@ -784,7 +818,9 @@ p {
 }
 
 .marker-save-button,
-.marker-clear-button {
+.marker-clear-button,
+.marker-delete-button,
+.marker-hide-button {
   background: var(--input-bg);
   cursor: pointer;
   white-space: nowrap;
@@ -798,6 +834,16 @@ p {
 .marker-clear-button {
   border-color: #f1c6c6;
   color: #b42318;
+}
+
+.marker-delete-button {
+  border-color: #f1c6c6;
+  color: #b42318;
+}
+
+.marker-hide-button {
+  border-color: #ddd6fe;
+  color: #7c3aed;
 }
 
 .comment-input {

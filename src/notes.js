@@ -40,6 +40,7 @@ export function createRecord(contentHtml, id, parentId = null) {
     isTodo: false,
     todoDone: false,
     entryMarker: null,
+    isHidden: false,
   };
 }
 

@@ -12,7 +12,8 @@ create table if not exists public.entries (
   author_color text,
   is_todo boolean not null default false,
   todo_done boolean not null default false,
-  entry_marker text
+  entry_marker text,
+  is_hidden boolean not null default false
 );
 
 create table if not exists public.entry_comments (
@@ -42,6 +43,11 @@ on public.entries
 for update
 using (true)
 with check (true);
+
+create policy "Allow public delete entries"
+on public.entries
+for delete
+using (true);
 
 create policy "Allow public read entry comments"
 on public.entry_comments
@@ -156,6 +162,9 @@ add column if not exists todo_done boolean not null default false;
 alter table public.entries
 add column if not exists entry_marker text;
 
+alter table public.entries
+add column if not exists is_hidden boolean not null default false;
+
 create table if not exists public.entry_comments (
   id text primary key,
   entry_id text not null references public.entries(id) on delete cascade,
@@ -173,9 +182,16 @@ for update
 using (true)
 with check (true);
 
--- This update policy is required for todo/check status, replies, and future
--- entry edits. Without it, the page may look clickable but Supabase updates
--- zero rows.
+drop policy if exists "Allow public delete entries" on public.entries;
+
+create policy "Allow public delete entries"
+on public.entries
+for delete
+using (true);
+
+-- The update policy is required for todo/check status, replies, hidden status,
+-- and future entry edits. The delete policy is required for the delete button.
+-- Without them, the page may look clickable but Supabase updates zero rows.
 
 alter table public.entry_comments enable row level security;
 

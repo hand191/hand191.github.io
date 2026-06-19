@@ -1,21 +1,25 @@
-import { debounce } from "./autosave.js?v=20260618-7";
+import { debounce } from "./autosave.js?v=20260619-2";
 import {
   AUTHORS,
   getAuthor,
   getRecordAuthorColor,
-} from "./authors.js?v=20260618-7";
+} from "./authors.js?v=20260619-2";
 import {
   createImageAttachment,
   imageBlobToDataUrl,
   preparePastedImageBlob,
-} from "./images.js?v=20260618-7";
+} from "./images.js?v=20260619-2";
 import {
+  deleteCloudRecord,
   loadCloudRecords,
   saveCloudComment,
   saveCloudRecord,
   uploadCloudImage,
-} from "./cloudStorage.js?v=20260618-7";
-import { FAMILY_ACCESS_CODE } from "./supabaseConfig.js?v=20260618-7";
+} from "./cloudStorage.js?v=20260619-2";
+import {
+  ADVANCED_ACCESS_CODE,
+  FAMILY_ACCESS_CODE,
+} from "./supabaseConfig.js?v=20260619-2";
 import {
   addRecord,
   cleanRecordHtml,
@@ -23,7 +27,7 @@ import {
   hasLocalEmbeddedImage,
   isBlankHtml,
   mergeRecords,
-} from "./notes.js?v=20260618-7";
+} from "./notes.js?v=20260619-2";
 import {
   clearDraft,
   clearRecords,
@@ -36,7 +40,7 @@ import {
   saveDraft,
   saveRecords,
   saveSelectedAuthor,
-} from "./storage.js?v=20260618-7";
+} from "./storage.js?v=20260619-2";
 
 const noteInput = document.querySelector("#noteInput");
 const accessGate = document.querySelector("#accessGate");
@@ -50,6 +54,7 @@ const roleButtons = document.querySelectorAll(".role-button");
 const lastSaved = document.querySelector("#lastSaved");
 const archiveButton = document.querySelector("#archiveButton");
 const recordCount = document.querySelector("#recordCount");
+const hiddenOnlyButton = document.querySelector("#hiddenOnlyButton");
 const recordsList = document.querySelector("#recordsList");
 const replyBanner = document.querySelector("#replyBanner");
 const replyTargetText = document.querySelector("#replyTargetText");
@@ -65,6 +70,10 @@ let openMoreActionsId = null;
 let selectedAuthorId = loadSelectedAuthor();
 let isAppStarted = false;
 const ACCESS_GRANTED_KEY = "family-entry-access-granted";
+const ADVANCED_GRANTED_KEY = "family-advanced-enabled";
+const ADVANCED_COMMAND_PREFIX = "/admin";
+let isAdvancedMode = localStorage.getItem(ADVANCED_GRANTED_KEY) === "true";
+let showHiddenOnly = false;
 
 function setStatus(message, tone = "neutral") {
   saveStatus.textContent = message;
@@ -158,6 +167,74 @@ function selectAuthor(authorId) {
   saveSelectedAuthor(selectedAuthorId);
   renderRoleSwitch();
   setStatus(`当前用户：${getSelectedAuthor().label}`, "success");
+}
+
+function getVisibleRecords() {
+  if (isAdvancedMode && showHiddenOnly) {
+    return records.filter((record) => record.isHidden);
+  }
+
+  if (isAdvancedMode) {
+    return records;
+  }
+
+  return records.filter((record) => !record.isHidden);
+}
+
+function renderAdvancedControls() {
+  hiddenOnlyButton.hidden = !isAdvancedMode;
+  hiddenOnlyButton.classList.toggle("hidden-only-button-active", showHiddenOnly);
+  hiddenOnlyButton.setAttribute("aria-pressed", String(showHiddenOnly));
+  hiddenOnlyButton.textContent = showHiddenOnly ? "显示全部" : "只看隐藏";
+}
+
+function setAdvancedMode(isEnabled) {
+  isAdvancedMode = isEnabled;
+  showHiddenOnly = false;
+
+  if (isAdvancedMode) {
+    localStorage.setItem(ADVANCED_GRANTED_KEY, "true");
+  } else {
+    localStorage.removeItem(ADVANCED_GRANTED_KEY);
+  }
+
+  renderAdvancedControls();
+  renderRecords();
+  setStatus(isAdvancedMode ? "高级模式已打开" : "高级模式已关闭", "success");
+}
+
+function getPlainInputText() {
+  return noteInput.textContent.replace(/\s+/g, " ").trim();
+}
+
+function clearCommandInput() {
+  noteInput.innerHTML = "";
+  clearDraft();
+  renderLastSavedTime();
+  updateArchiveButton();
+}
+
+function handleAdvancedCommand() {
+  const text = getPlainInputText();
+
+  if (!text.startsWith(ADVANCED_COMMAND_PREFIX)) {
+    return false;
+  }
+
+  if (text === `${ADVANCED_COMMAND_PREFIX} ${ADVANCED_ACCESS_CODE}`) {
+    clearCommandInput();
+    setAdvancedMode(true);
+    return true;
+  }
+
+  if (text === `${ADVANCED_COMMAND_PREFIX} off`) {
+    clearCommandInput();
+    setAdvancedMode(false);
+    return true;
+  }
+
+  setStatus("高级指令不正确", "error");
+  return true;
 }
 
 function buildReplyChain(recordId) {
@@ -298,27 +375,46 @@ function createMoreActionsPanel(record) {
   clearButton.type = "button";
   clearButton.textContent = "清除图标";
 
-  panel.append(input, saveButton, clearButton);
+  const deleteButton = document.createElement("button");
+  deleteButton.className = "marker-delete-button";
+  deleteButton.type = "button";
+  deleteButton.textContent = "删除";
+
+  panel.append(input, saveButton, clearButton, deleteButton);
+
+  if (isAdvancedMode) {
+    const hiddenButton = document.createElement("button");
+    hiddenButton.className = "marker-hide-button";
+    hiddenButton.type = "button";
+    hiddenButton.textContent = record.isHidden ? "取消隐藏" : "隐藏";
+    panel.append(hiddenButton);
+  }
 
   return panel;
 }
 
 function renderRecords() {
-  recordCount.textContent = `${records.length} 条`;
+  const visibleRecords = getVisibleRecords();
+  recordCount.textContent = `${visibleRecords.length} 条`;
   recordsList.innerHTML = "";
+  renderAdvancedControls();
 
-  if (!records.length) {
+  if (!visibleRecords.length) {
     const emptyState = document.createElement("div");
     emptyState.className = "empty-records";
-    emptyState.textContent = "还没有归档记录";
+    emptyState.textContent = showHiddenOnly ? "还没有隐藏记录" : "还没有归档记录";
     recordsList.append(emptyState);
     return;
   }
 
-  for (const record of records) {
+  for (const record of visibleRecords) {
     const card = document.createElement("article");
     card.className = "record-card";
     card.dataset.recordId = record.id;
+
+    if (record.isHidden) {
+      card.classList.add("record-card-hidden");
+    }
 
     const authorBorderColor = getRecordAuthorColor(record);
 
@@ -679,6 +775,61 @@ async function updateRecordMarker(recordId, entryMarker) {
   }
 }
 
+async function updateRecordHidden(recordId, isHidden) {
+  const record = records.find((currentRecord) => currentRecord.id === recordId);
+
+  if (!record) {
+    return;
+  }
+
+  const nextRecord = {
+    ...record,
+    isHidden,
+  };
+  const nextRecords = addRecord(records, nextRecord);
+
+  try {
+    await saveCloudRecord(nextRecord, {
+      updateExisting: true,
+      requireHidden: true,
+    });
+    records = nextRecords;
+    openMoreActionsId = null;
+    saveRecords(records);
+    renderRecords();
+    setStatus(isHidden ? "已隐藏" : "已取消隐藏", "success");
+  } catch (error) {
+    setStatus(getSaveErrorMessage(error), "error");
+    console.error(error);
+  }
+}
+
+async function removeRecord(recordId) {
+  const record = records.find((currentRecord) => currentRecord.id === recordId);
+
+  if (!record) {
+    return;
+  }
+
+  const confirmed = window.confirm(`确定删除：${getRecordSummary(record)}？`);
+
+  if (!confirmed) {
+    return;
+  }
+
+  try {
+    await deleteCloudRecord(recordId);
+    records = records.filter((currentRecord) => currentRecord.id !== recordId);
+    openMoreActionsId = null;
+    saveRecords(records);
+    renderRecords();
+    setStatus("已删除", "success");
+  } catch (error) {
+    setStatus(getSaveErrorMessage(error), "error");
+    console.error(error);
+  }
+}
+
 function toggleRecordTodo(recordId) {
   const record = records.find((currentRecord) => currentRecord.id === recordId);
 
@@ -747,8 +898,16 @@ function getSaveErrorMessage(error) {
     return "保存失败：数据库缺少图标字段";
   }
 
+  if (error?.message?.includes("is_hidden")) {
+    return "保存失败：数据库缺少隐藏字段";
+  }
+
   if (error?.message?.includes("update policy")) {
     return "保存失败：数据库没有允许更新";
+  }
+
+  if (error?.message?.includes("delete policy")) {
+    return "删除失败：数据库没有允许删除";
   }
 
   if (error?.message) {
@@ -814,6 +973,10 @@ async function reloadFromCloud() {
 async function archiveCurrentContent() {
   if (isArchiving) {
     setStatus("正在归档，请稍等", "working");
+    return;
+  }
+
+  if (handleAdvancedCommand()) {
     return;
   }
 
@@ -928,6 +1091,10 @@ if (isAccessGranted()) {
 }
 
 noteInput.addEventListener("input", () => {
+  if (handleAdvancedCommand()) {
+    return;
+  }
+
   setStatus("正在输入...", "working");
   updateArchiveButton();
   autosaveDraft();
@@ -1096,12 +1263,34 @@ recordsList.addEventListener("submit", (event) => {
 recordsList.addEventListener("click", (event) => {
   const clearButton = event.target.closest(".marker-clear-button");
 
-  if (!clearButton) {
+  if (clearButton) {
+    const panel = clearButton.closest(".more-actions-panel");
+    updateRecordMarker(panel.dataset.recordId, null);
     return;
   }
 
-  const panel = clearButton.closest(".more-actions-panel");
-  updateRecordMarker(panel.dataset.recordId, null);
+  const deleteButton = event.target.closest(".marker-delete-button");
+
+  if (deleteButton) {
+    const panel = deleteButton.closest(".more-actions-panel");
+    removeRecord(panel.dataset.recordId);
+    return;
+  }
+
+  const hiddenButton = event.target.closest(".marker-hide-button");
+
+  if (!hiddenButton) {
+    return;
+  }
+
+  const panel = hiddenButton.closest(".more-actions-panel");
+  const record = records.find((currentRecord) => {
+    return currentRecord.id === panel.dataset.recordId;
+  });
+
+  if (record) {
+    updateRecordHidden(record.id, !record.isHidden);
+  }
 });
 
 roleButtons.forEach((button) => {
@@ -1115,5 +1304,11 @@ accessForm.addEventListener("submit", handleAccessSubmit);
 cancelReplyButton.addEventListener("click", cancelReply);
 
 reloadButton.addEventListener("click", reloadFromCloud);
+
+hiddenOnlyButton.addEventListener("click", () => {
+  showHiddenOnly = !showHiddenOnly;
+  renderRecords();
+  setStatus(showHiddenOnly ? "只看隐藏记录" : "显示全部记录", "success");
+});
 
 archiveButton.addEventListener("click", archiveCurrentContent);

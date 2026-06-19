@@ -5,7 +5,7 @@ import {
   SUPABASE_ANON_KEY,
   SUPABASE_URL,
   isCloudConfigured,
-} from "./supabaseConfig.js?v=20260618-7";
+} from "./supabaseConfig.js?v=20260619-2";
 
 let supabaseClient;
 
@@ -42,6 +42,10 @@ function toDatabaseRecord(record, options = {}) {
     databaseRecord.entry_marker = record.entryMarker || null;
   }
 
+  if (options.includeHidden !== false) {
+    databaseRecord.is_hidden = Boolean(record.isHidden);
+  }
+
   if (options.includeAuthor !== false) {
     databaseRecord.author_id = record.authorId || null;
     databaseRecord.author_color = record.authorColor || null;
@@ -62,6 +66,7 @@ function fromDatabaseRecord(row) {
     isTodo: Boolean(row.is_todo),
     todoDone: Boolean(row.todo_done),
     entryMarker: row.entry_marker || null,
+    isHidden: Boolean(row.is_hidden),
   };
 }
 
@@ -134,8 +139,17 @@ export async function loadCloudRecords() {
   };
 
   let { data, error } = await selectRecords(
-    "id, parent_id, content_html, created_at, author_id, author_color, is_todo, todo_done, entry_marker"
+    "id, parent_id, content_html, created_at, author_id, author_color, is_todo, todo_done, entry_marker, is_hidden"
   );
+
+  if (error?.message?.includes("is_hidden")) {
+    const fallback = await selectRecords(
+      "id, parent_id, content_html, created_at, author_id, author_color, is_todo, todo_done, entry_marker"
+    );
+
+    data = fallback.data;
+    error = fallback.error;
+  }
 
   if (error?.message?.includes("entry_marker")) {
     const fallback = await selectRecords(
@@ -232,6 +246,16 @@ export async function saveCloudRecord(record, options = {}) {
     error = fallback.error;
   }
 
+  if (error?.message?.includes("is_hidden") && !options.requireHidden) {
+    writeOptions = {
+      ...writeOptions,
+      includeHidden: false,
+    };
+    const fallback = await writeRecord(writeOptions);
+    data = fallback.data;
+    error = fallback.error;
+  }
+
   if (error) {
     throw error;
   }
@@ -241,6 +265,39 @@ export async function saveCloudRecord(record, options = {}) {
   }
 
   return record;
+}
+
+export async function deleteCloudRecord(recordId) {
+  const client = await getSupabaseClient();
+
+  if (!client) {
+    return null;
+  }
+
+  const { error: childUpdateError } = await client
+    .from(CLOUD_RECORDS_TABLE)
+    .update({ parent_id: null })
+    .eq("parent_id", recordId);
+
+  if (childUpdateError) {
+    throw childUpdateError;
+  }
+
+  const { data, error } = await client
+    .from(CLOUD_RECORDS_TABLE)
+    .delete()
+    .eq("id", recordId)
+    .select("id");
+
+  if (error) {
+    throw error;
+  }
+
+  if (Array.isArray(data) && data.length === 0) {
+    throw new Error("数据库没有允许删除这条记录，请检查 entries 的 delete policy");
+  }
+
+  return recordId;
 }
 
 export async function saveCloudComment(comment) {
