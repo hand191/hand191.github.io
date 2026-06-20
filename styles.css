@@ -657,11 +657,8 @@ p {
   font-weight: 700;
   height: 20px;
   justify-content: center;
-  left: 10px;
   line-height: 1;
   padding: 0;
-  position: absolute;
-  top: 5px;
   width: 20px;
 }
 
@@ -676,19 +673,25 @@ p {
   font-size: 17px;
   height: 20px;
   justify-content: center;
-  left: 10px;
   line-height: 1;
   max-width: 44px;
   overflow: hidden;
-  position: absolute;
   text-overflow: ellipsis;
-  top: 5px;
   white-space: nowrap;
   z-index: 2;
 }
 
-.record-card-todo .entry-marker {
-  left: 34px;
+.record-leading-tools {
+  align-items: center;
+  display: flex;
+  gap: 4px;
+  left: 10px;
+  max-width: 34%;
+  min-height: 20px;
+  overflow: hidden;
+  position: absolute;
+  top: 5px;
+  z-index: 2;
 }
 
 .record-toolbar {
@@ -888,7 +891,13 @@ p {
 }
 
 .record-links-button {
-  margin: 3px 0 0;
+  border-radius: 5px;
+  flex: 0 0 auto;
+  font-size: 10px;
+  line-height: 1;
+  margin: 0;
+  min-height: 20px;
+  padding: 2px 5px;
 }
 
 .link-remove-button {
@@ -1106,18 +1115,14 @@ html[data-theme="dark"] .reply-button:hover {
     padding-left: 7px;
   }
 
-  .todo-toggle {
-    left: 8px;
-    top: 5px;
-  }
-
   .entry-marker {
-    left: 8px;
     max-width: 34px;
   }
 
-  .record-card-todo .entry-marker {
-    left: 31px;
+  .record-leading-tools {
+    gap: 3px;
+    left: 8px;
+    max-width: 32%;
   }
 
   .more-actions-panel {

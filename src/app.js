@@ -1,14 +1,14 @@
-import { debounce } from "./autosave.js?v=20260619-7";
+import { debounce } from "./autosave.js?v=20260620-1";
 import {
   AUTHORS,
   getAuthor,
   getRecordAuthorColor,
-} from "./authors.js?v=20260619-7";
+} from "./authors.js?v=20260620-1";
 import {
   createImageAttachment,
   imageBlobToDataUrl,
   preparePastedImageBlob,
-} from "./images.js?v=20260619-7";
+} from "./images.js?v=20260620-1";
 import {
   deleteCloudRecord,
   deleteCloudLink,
@@ -17,8 +17,8 @@ import {
   saveCloudLink,
   saveCloudRecord,
   uploadCloudImage,
-} from "./cloudStorage.js?v=20260619-7";
-import { FAMILY_ACCESS_CODE } from "./supabaseConfig.js?v=20260619-7";
+} from "./cloudStorage.js?v=20260620-1";
+import { FAMILY_ACCESS_CODE } from "./supabaseConfig.js?v=20260620-1";
 import {
   addRecord,
   cleanRecordHtml,
@@ -26,7 +26,7 @@ import {
   hasLocalEmbeddedImage,
   isBlankHtml,
   mergeRecords,
-} from "./notes.js?v=20260619-7";
+} from "./notes.js?v=20260620-1";
 import {
   clearDraft,
   clearRecords,
@@ -39,7 +39,7 @@ import {
   saveDraft,
   saveRecords,
   saveSelectedAuthor,
-} from "./storage.js?v=20260619-7";
+} from "./storage.js?v=20260620-1";
 
 const noteInput = document.querySelector("#noteInput");
 const accessGate = document.querySelector("#accessGate");
@@ -515,6 +515,9 @@ function renderRecords() {
     const toolbar = document.createElement("div");
     toolbar.className = "record-toolbar";
 
+    const leadingTools = document.createElement("div");
+    leadingTools.className = "record-leading-tools";
+
     const moreActions = document.createElement("div");
     moreActions.className = "record-more-actions";
 
@@ -578,7 +581,7 @@ function renderRecords() {
       todoToggle.type = "button";
       todoToggle.setAttribute("aria-pressed", String(Boolean(record.todoDone)));
       todoToggle.textContent = record.todoDone ? "✓" : "";
-      card.append(todoToggle);
+      leadingTools.append(todoToggle);
     }
 
     if (record.entryMarker) {
@@ -587,10 +590,23 @@ function renderRecords() {
       const marker = document.createElement("span");
       marker.className = "entry-marker";
       marker.textContent = record.entryMarker;
-      card.append(marker);
+      leadingTools.append(marker);
+    }
+
+    if ((record.links || []).length) {
+      const linksButton = document.createElement("button");
+      linksButton.className = "record-links-button";
+      linksButton.type = "button";
+      linksButton.textContent = `关联 ${record.links.length}`;
+      leadingTools.append(linksButton);
     }
 
     card.prepend(toolbar);
+
+    if (leadingTools.childElementCount) {
+      card.append(leadingTools);
+    }
+
     card.append(content);
 
     if (linkingSourceId && linkingSourceId !== record.id) {
@@ -599,14 +615,6 @@ function renderRecords() {
       linkTargetButton.type = "button";
       linkTargetButton.textContent = "选为关联";
       card.append(linkTargetButton);
-    }
-
-    if ((record.links || []).length) {
-      const linksButton = document.createElement("button");
-      linksButton.className = "record-links-button";
-      linksButton.type = "button";
-      linksButton.textContent = `关联 ${record.links.length}`;
-      card.append(linksButton);
     }
 
     if ((record.comments || []).length) {
